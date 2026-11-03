@@ -1,4 +1,4 @@
-name: Build Admin and User APKs
+name: Build PromptGo Admin and User APKs
 on:
   workflow_dispatch:
 permissions:
@@ -12,43 +12,43 @@ jobs:
         with:
           channel: stable
           cache: true
-      - name: Generate Admin project
-        run: flutter create --platforms=android --org com.safisafi.test --project-name admin admin_app
+      - name: Generate PromptGo Admin project
+        run: flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_admin admin_app
       - name: Remove generated template tests
         run: rm -rf admin_app/test
-      - name: Install Admin source
+      - name: Install PromptGo Admin source
         run: |
           cp admin/main.dart admin_app/lib/main.dart
           cp admin/pubspec.yaml admin_app/pubspec.yaml
-      - name: Build Admin
+      - name: Build PromptGo Admin
         working-directory: admin_app
         run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
-      - name: Generate User project
-        run: flutter create --platforms=android --org com.safisafi.test --project-name user user_app
+      - name: Generate PromptGo User project
+        run: flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_user user_app
       - name: Remove generated template tests
         run: rm -rf user_app/test
-      - name: Install User source
+      - name: Install PromptGo User source
         run: |
           cp user/main.dart user_app/lib/main.dart
           cp user/pubspec.yaml user_app/pubspec.yaml
-      - name: Build User
+      - name: Build PromptGo User
         working-directory: user_app
         run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
-      - name: Package APKs
+      - name: Package PromptGo APKs
         run: |
           mkdir -p output
-          cp admin_app/build/app/outputs/flutter-apk/app-release.apk output/Message-Admin.apk
-          cp user_app/build/app/outputs/flutter-apk/app-release.apk output/Message-User.apk
-          cd output && zip ../Message-Apps.zip Message-Admin.apk Message-User.apk
+          cp admin_app/build/app/outputs/flutter-apk/app-release.apk output/PromptGo-Admin.apk
+          cp user_app/build/app/outputs/flutter-apk/app-release.apk output/PromptGo-User.apk
+          cd output && zip ../PromptGo-Apps.zip PromptGo-Admin.apk PromptGo-User.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Message-Admin-APK
-          path: output/Message-Admin.apk
+          name: PromptGo-Admin-APK
+          path: output/PromptGo-Admin.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Message-User-APK
-          path: output/Message-User.apk
+          name: PromptGo-User-APK
+          path: output/PromptGo-User.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: Message-Apps-ZIP
-          path: Message-Apps.zip
+          name: PromptGo-Apps-ZIP
+          path: PromptGo-Apps.zip
