@@ -1,17 +1,15 @@
-# Firebase Message Apps (Flutter)
-Two independent Flutter Android apps:
-- Admin: Firebase email/password login; create, edit and delete messages.
-- User: live read-only list of messages.
+# PromptGo — Admin and User Flutter Apps
 
-Firebase project: pashto-poetry-new-2c4ba
-Realtime Database: https://pashto-poetry-new-2c4ba-default-rtdb.firebaseio.com
-Generated Android package IDs: com.safisafi.test.admin and com.safisafi.test.user.
+Two separate Android apps sharing Firebase Realtime Database:
+- PromptGo Admin: Firebase email/password sign-in; create, edit, and delete prompts (title, category, content).
+- PromptGo User: browse, search, filter by category, copy prompts, and save favorites locally on the device.
+- Both apps use system light/dark appearance automatically and include a branded splash screen.
 
 ## Firebase setup
 1. Enable Authentication > Sign-in method > Email/Password.
-2. Create the administrator account manually in Authentication > Users. The app has no public registration.
-3. Import database.rules.json in Realtime Database > Rules. Test rules allow public reads and authenticated writes. Before production, restrict writes to the admin UID/custom claim.
-4. The supplied Android appId is used for both test builds. For production, register both package IDs as separate Android apps and use each matching Firebase appId.
+2. Create the administrator account manually in Authentication > Users. There is no public admin registration.
+3. Import database.rules.json into Realtime Database > Rules. These are test rules: reads are public and any authenticated user can write. For production, restrict writes to the administrator UID/custom claim.
+4. The supplied Firebase Android appId is currently reused as a test configuration. For production, register separate Android apps with package IDs com.safisafi.promptgo.promptgo_admin and com.safisafi.promptgo.promptgo_user, then configure each app with its own Firebase options / google-services file.
 
 ## Build
-GitHub Actions builds separate release APK artifacts and a ZIP containing both. Open Actions > Build Admin and User APKs after a push or run it manually.
+Run GitHub Actions > Build PromptGo Admin and User APKs manually. It uploads separate Admin and User APK artifacts plus a ZIP containing both.
