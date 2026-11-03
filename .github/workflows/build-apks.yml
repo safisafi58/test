@@ -29,7 +29,7 @@ jobs:
           cp user/pubspec.yaml user_app/pubspec.yaml
       - name: Build User
         working-directory: user_app
-        run: flutter pub get && flutter build apk --release
+        run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
       - name: Package APKs
         run: |
           mkdir -p output
