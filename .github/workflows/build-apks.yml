@@ -1,0 +1,52 @@
+name: Build Admin and User APKs
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Generate Admin project
+        run: flutter create --platforms=android --org com.safisafi.test --project-name admin admin_app
+      - name: Install Admin source
+        run: |
+          cp admin/main.dart admin_app/lib/main.dart
+          cp admin/pubspec.yaml admin_app/pubspec.yaml
+      - name: Build Admin
+        working-directory: admin_app
+        run: flutter pub get && flutter build apk --release
+      - name: Generate User project
+        run: flutter create --platforms=android --org com.safisafi.test --project-name user user_app
+      - name: Install User source
+        run: |
+          cp user/main.dart user_app/lib/main.dart
+          cp user/pubspec.yaml user_app/pubspec.yaml
+      - name: Build User
+        working-directory: user_app
+        run: flutter pub get && flutter build apk --release
+      - name: Package APKs
+        run: |
+          mkdir -p output
+          cp admin_app/build/app/outputs/flutter-apk/app-release.apk output/Message-Admin.apk
+          cp user_app/build/app/outputs/flutter-apk/app-release.apk output/Message-User.apk
+          cd output && zip ../Message-Apps.zip Message-Admin.apk Message-User.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Message-Admin-APK
+          path: output/Message-Admin.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Message-User-APK
+          path: output/Message-User.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Message-Apps-ZIP
+          path: Message-Apps.zip
