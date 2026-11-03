@@ -1,6 +1,6 @@
 {
   "rules": {
-    "messages": {
+    "prompts": {
       ".read": true,
       ".write": "auth != null"
     }
