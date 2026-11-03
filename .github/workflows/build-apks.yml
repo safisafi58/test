@@ -13,7 +13,9 @@ jobs:
           channel: stable
           cache: true
       - name: Generate PromptGo Admin project
-        run: flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_admin admin_app
+        run: |
+          flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_admin admin_app
+          sed -i 's/android:label="promptgo_admin"/android:label="PromptGo Admin"/' admin_app/android/app/src/main/AndroidManifest.xml
       - name: Remove generated template tests
         run: rm -rf admin_app/test
       - name: Install PromptGo Admin source
@@ -24,7 +26,9 @@ jobs:
         working-directory: admin_app
         run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
       - name: Generate PromptGo User project
-        run: flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_user user_app
+        run: |
+          flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_user user_app
+          sed -i 's/android:label="promptgo_user"/android:label="PromptGo"/' user_app/android/app/src/main/AndroidManifest.xml
       - name: Remove generated template tests
         run: rm -rf user_app/test
       - name: Install PromptGo User source
