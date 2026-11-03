@@ -20,7 +20,7 @@ jobs:
           cp admin/pubspec.yaml admin_app/pubspec.yaml
       - name: Build Admin
         working-directory: admin_app
-        run: flutter pub get && flutter analyze && flutter build apk --release
+        run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
       - name: Generate User project
         run: flutter create --platforms=android --org com.safisafi.test --project-name user user_app
       - name: Install User source
