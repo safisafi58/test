@@ -14,6 +14,8 @@ jobs:
           cache: true
       - name: Generate Admin project
         run: flutter create --platforms=android --org com.safisafi.test --project-name admin admin_app
+      - name: Remove generated template tests
+        run: rm -rf admin_app/test
       - name: Install Admin source
         run: |
           cp admin/main.dart admin_app/lib/main.dart
@@ -23,6 +25,8 @@ jobs:
         run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
       - name: Generate User project
         run: flutter create --platforms=android --org com.safisafi.test --project-name user user_app
+      - name: Remove generated template tests
+        run: rm -rf user_app/test
       - name: Install User source
         run: |
           cp user/main.dart user_app/lib/main.dart
