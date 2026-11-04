@@ -243,12 +243,18 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
+
   @override
   Widget build(BuildContext context) {
     final ref = FirebaseDatabase.instance.ref('prompts');
     return Scaffold(
       drawer: Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
-        UserAccountsDrawerHeader(margin: EdgeInsets.zero, accountName: const Text('Admin Profile', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? 'Admin account'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30))),
+        UserAccountsDrawerHeader(
+          margin: EdgeInsets.zero,
+          accountName: const Text('Admin Profile', style: TextStyle(fontWeight: FontWeight.w900)),
+          accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? 'Admin account'),
+          currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30)),
+        ),
         ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
         ListTile(leading: const Icon(Icons.manage_accounts_outlined), title: const Text('App information & creator'), subtitle: const Text('Edit creator details and contacts'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())); }),
         ListTile(leading: const Icon(Icons.telegram), title: const Text('Add Telegram post'), subtitle: const Text('Import image and text from a public channel'), onTap: () { Navigator.pop(context); addTelegramPrompt(context, ref); }),
@@ -256,11 +262,14 @@ class AdminHome extends StatelessWidget {
         const ListTile(leading: Icon(Icons.info_outline), title: Text('PromptGo Admin'), subtitle: Text('Version 1.0.0')),
         ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), onTap: () { Navigator.pop(context); FirebaseAuth.instance.signOut(); }),
       ]))),
-      appBar: AppBar(title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)), actions: [
-        IconButton(tooltip: 'Add Telegram post', onPressed: () => addTelegramPrompt(context, ref), icon: const Icon(Icons.telegram)),
-        IconButton(tooltip: 'App settings', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())), icon: const Icon(Icons.settings_suggest_outlined)),
-        IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
-      ]),
+      appBar: AppBar(
+        title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)),
+        actions: [
+          IconButton(tooltip: 'Add Telegram post', onPressed: () => addTelegramPrompt(context, ref), icon: const Icon(Icons.telegram)),
+          IconButton(tooltip: 'App settings', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())), icon: const Icon(Icons.settings_suggest_outlined)),
+          IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => editPrompt(context, ref), icon: const Icon(Icons.add), label: const Text('New prompt')),
       body: StreamBuilder<DatabaseEvent>(
         stream: ref.onValue,
@@ -269,43 +278,102 @@ class AdminHome extends StatelessWidget {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final raw = snapshot.data!.snapshot.value;
           if (raw is! Map || raw.isEmpty) return const Center(child: Text('No prompts yet. Tap New prompt to add one.'));
-          final entries = raw.entries.toList();
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-            itemCount: entries.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 9),
-            itemBuilder: (context, index) {
-              final entry = entries[index];
-              if (entry.value is! Map) return const SizedBox.shrink();
-              final id = entry.key.toString();
-              final data = Map<dynamic, dynamic>.from(entry.value as Map);
-              final title = (data['title'] ?? 'Untitled').toString();
-              final category = (data['category'] ?? 'Video Prompt').toString();
-              final imageUrl = (data['imageUrl'] ?? '').toString();
-              return Card(child: ListTile(
-                leading: imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.image_outlined)) : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 54, height: 54, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const CircleAvatar(child: Icon(Icons.broken_image_outlined)))),
-                title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('$category${data['isTrending'] == true ? ' • TRENDING' : ''}\n${data['content'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
-                isThreeLine: true,
-                trailing: PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'edit') editPrompt(context, ref, id: id, old: data);
-                    if (value == 'delete') deletePrompt(context, ref, id);
-                  },
-                  itemBuilder: (_) => const [
-                    PopupMenuItem(value: 'edit', child: Text('Edit')),
-                    PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
+
+          final grouped = <String, List<Map<String, dynamic>>>{};
+          for (final entry in raw.entries) {
+            if (entry.value is! Map) continue;
+            final data = Map<dynamic, dynamic>.from(entry.value as Map);
+            final category = (data['category'] ?? 'Video Prompt').toString();
+            grouped.putIfAbsent(category, () => <Map<String, dynamic>>[]).add({
+              'id': entry.key.toString(),
+              'data': data,
+              'title': (data['title'] ?? 'Untitled').toString(),
+              'imageUrl': (data['imageUrl'] ?? '').toString(),
+              'content': (data['content'] ?? '').toString(),
+              'isTrending': data['isTrending'] == true,
+            });
+          }
+          if (grouped.isEmpty) return const Center(child: Text('No prompts yet. Tap New prompt to add one.'));
+          for (final posts in grouped.values) {
+            posts.sort((a, b) => a['title'].toString().toLowerCase().compareTo(b['title'].toString().toLowerCase()));
+          }
+          final categories = <String>[
+            ...promptCategories.where(grouped.containsKey),
+            ...grouped.keys.where((category) => !promptCategories.contains(category)).toList()..sort(),
+          ];
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 100),
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+                child: Text(
+                  '${grouped.values.fold<int>(0, (total, posts) => total + posts.length)} posts • ${categories.length} categories',
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontWeight: FontWeight.w700),
                 ),
-              ));
-            },
+              ),
+              for (final category in categories)
+                Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: ExpansionTile(
+                    initiallyExpanded: false,
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                      child: Icon(Icons.category_outlined, color: Theme.of(context).colorScheme.primary),
+                    ),
+                    title: Text(category, style: const TextStyle(fontWeight: FontWeight.w900)),
+                    subtitle: Text('${grouped[category]!.length} posts'),
+                    children: [
+                      const Divider(height: 1),
+                      for (final post in grouped[category]!)
+                        ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                          leading: post['imageUrl'].toString().isEmpty
+                              ? const CircleAvatar(child: Icon(Icons.image_outlined))
+                              : ClipRRect(
+                                  borderRadius: BorderRadius.circular(9),
+                                  child: Image.network(
+                                    post['imageUrl'].toString(),
+                                    width: 54,
+                                    height: 54,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => const CircleAvatar(child: Icon(Icons.broken_image_outlined)),
+                                  ),
+                                ),
+                          title: Text(
+                            post['title'].toString(),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            '${post['isTrending'] == true ? 'TRENDING • ' : ''}${post['content']}',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          trailing: PopupMenuButton<String>(
+                            tooltip: 'Manage post',
+                            onSelected: (value) {
+                              final id = post['id'].toString();
+                              final data = post['data'] as Map<dynamic, dynamic>;
+                              if (value == 'edit') editPrompt(context, ref, id: id, old: data);
+                              if (value == 'delete') deletePrompt(context, ref, id);
+                            },
+                            itemBuilder: (_) => const [
+                              PopupMenuItem(value: 'edit', child: ListTile(dense: true, leading: Icon(Icons.edit_outlined), title: Text('Edit'))),
+                              PopupMenuItem(value: 'delete', child: ListTile(dense: true, leading: Icon(Icons.delete_outline), title: Text('Delete'))),
+                            ],
+                          ),
+                        ),
+                      const SizedBox(height: 6),
+                    ],
+                  ),
+                ),
+            ],
           );
         },
       ),
     );
   }
 }
-
 
 /// Imports a post from a PUBLIC Telegram channel and saves its photo and caption
 /// into the same Firebase fields used by regular prompts. The channel name is
