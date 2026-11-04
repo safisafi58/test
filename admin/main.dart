@@ -225,14 +225,14 @@ Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id
       TextFormField(controller: title, decoration: const InputDecoration(labelText: 'Title'), validator: (v) => v == null || v.trim().isEmpty ? 'Enter a title' : null),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
-        value: category,
+        initialValue: category,
         decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
         items: promptCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
         onChanged: (v) { if (v != null) setDialogState(() => category = v); },
       ),
       SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Mark as Trending'), value: trending, onChanged: (v) => setDialogState(() => trending = v)),
       TextFormField(controller: content, minLines: 4, maxLines: 8, decoration: const InputDecoration(labelText: 'Prompt text'), validator: (v) => v == null || v.trim().isEmpty ? 'Enter prompt text' : null),
-    ]))),
+    ])))),
     actions: [
       TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
       FilledButton(onPressed: () async {
