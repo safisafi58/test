@@ -154,6 +154,87 @@ Future<void> main() async {
   runApp(const PromptGoUser());
 }
 
+
+ThemeData promptGoTheme({required bool dark, required Color seed}) {
+  final base = ColorScheme.fromSeed(
+    seedColor: seed,
+    brightness: dark ? Brightness.dark : Brightness.light,
+  ).copyWith(
+    tertiary: const Color(0xff00d4ff),
+    surface: dark ? const Color(0xff15182b) : const Color(0xfffbfaff),
+  );
+  final glass = dark ? const Color(0xff252943).withValues(alpha: .76) : Colors.white.withValues(alpha: .82);
+  final edge = dark ? const Color(0xff9b8cff).withValues(alpha: .25) : const Color(0xff8068df).withValues(alpha: .16);
+  final radius = BorderRadius.circular(20);
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: base,
+    scaffoldBackgroundColor: dark ? const Color(0xff090b18) : const Color(0xfff2f1fb),
+    cardColor: glass,
+    cardTheme: CardTheme(
+      color: glass,
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+      shape: RoundedRectangleBorder(
+        borderRadius: radius,
+        side: BorderSide(color: edge, width: 1),
+      ),
+    ),
+    appBarTheme: AppBarTheme(
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      titleTextStyle: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: base.onSurface),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: glass,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      border: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: edge)),
+      enabledBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: edge)),
+      focusedBorder: OutlineInputBorder(borderRadius: radius, borderSide: BorderSide(color: base.primary, width: 1.6)),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        textStyle: const TextStyle(fontWeight: FontWeight.w800),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        side: BorderSide(color: base.primary.withValues(alpha: .45)),
+      ),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: base.primary,
+      foregroundColor: base.onPrimary,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+    ),
+    chipTheme: ChipThemeData(
+      shape: const StadiumBorder(),
+      side: BorderSide(color: edge),
+      backgroundColor: glass,
+      selectedColor: base.primaryContainer,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    ),
+    progressIndicatorTheme: ProgressIndicatorThemeData(color: base.tertiary),
+    dividerTheme: DividerThemeData(color: edge, thickness: 1),
+    pageTransitionsTheme: const PageTransitionsTheme(builders: {
+      TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      TargetPlatform.windows: ZoomPageTransitionsBuilder(),
+      TargetPlatform.linux: ZoomPageTransitionsBuilder(),
+      TargetPlatform.macOS: CupertinoPageTransitionsBuilder(),
+    }),
+  );
+}
+
 class PromptGoUser extends StatelessWidget {
   const PromptGoUser({super.key});
   @override
@@ -161,8 +242,8 @@ class PromptGoUser extends StatelessWidget {
     title: 'PromptGo',
     debugShowCheckedModeBanner: false,
     themeMode: promptGoThemeMode.value,
-    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value), scaffoldBackgroundColor: const Color(0xfff7f7fa), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
-    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value, brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
+    theme: promptGoTheme(dark: false, seed: promptGoAccent.value),
+    darkTheme: promptGoTheme(dark: true, seed: promptGoAccent.value),
     builder: (context, child) => Directionality(textDirection: promptGoIsRtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
     home: const PromptGoSplash(),
   ));
