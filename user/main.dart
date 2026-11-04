@@ -57,6 +57,8 @@ class _PromptGoSplashState extends State<PromptGoSplash> {
     Text('IDEAS INTO ACTION', style: TextStyle(letterSpacing: 3, color: Theme.of(context).colorScheme.onSurfaceVariant)),
     const SizedBox(height: 24), const CircularProgressIndicator(),
   ])));
+  }
+}
 
 class PromptLibrary extends StatefulWidget {
   const PromptLibrary({super.key});
