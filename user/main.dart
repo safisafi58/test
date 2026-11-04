@@ -61,7 +61,7 @@ class PromptGoUser extends StatelessWidget {
   Widget build(BuildContext context) => AnimatedBuilder(animation: Listenable.merge([promptGoThemeMode, promptGoLanguage]), builder: (context, _) => MaterialApp(
     title: 'PromptGo',
     debugShowCheckedModeBanner: false,
-    themeMode: mode,
+    themeMode: promptGoThemeMode.value,
     theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4)), scaffoldBackgroundColor: const Color(0xfff7f7fa)),
     darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014)),
     builder: (context, child) => Directionality(textDirection: promptGoIsRtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
