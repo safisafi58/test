@@ -174,7 +174,11 @@ class _PromptLibraryState extends State<PromptLibrary> {
   @override
   Widget build(BuildContext context) {
     final ref = FirebaseDatabase.instance.ref('prompts');
-    return Scaffold(
+    return WillPopScope(onWillPop: () async {
+      final leave = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Exit PromptGo?'), content: const Text('Do you want to close the app?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Exit'))]));
+      if (leave == true) SystemNavigator.pop();
+      return false;
+    }, child: Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
         title: Row(children: [ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 30, height: 30, fit: BoxFit.contain)), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
@@ -274,7 +278,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
           ]));
         },
       ),
-    );
+    ));
   }
 
   Widget _buildLatestPostsSlider(BuildContext context) {
