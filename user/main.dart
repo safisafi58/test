@@ -551,7 +551,7 @@ class OnlineGate extends StatelessWidget {
         const Text('Internet connection required', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
         const SizedBox(height: 8), const Text('PromptGo works online only. Connect to the internet and try again.', textAlign: TextAlign.center),
         const SizedBox(height: 20), const CircularProgressIndicator(),
-      ])))));
+      ]))));
       return FutureBuilder<Map<String,dynamic>?>(future: _requiredUpdate(), builder: (context, update) {
         if (update.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
         if (update.hasError) return const Scaffold(body: Center(child: Text('Could not check app version. Please reconnect.')));
