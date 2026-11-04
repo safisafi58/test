@@ -360,7 +360,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
     }, child: Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: Row(children: [promptGoLogo(context, size: 30), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
+        title: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
           IconButton(tooltip: 'Favorites', onPressed: () => setState(() => showFavoritesOnly = !showFavoritesOnly), icon: Icon(showFavoritesOnly ? Icons.favorite : Icons.favorite_border)),
         ],
