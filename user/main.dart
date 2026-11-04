@@ -359,7 +359,7 @@ class AboutPromptGoPage extends StatelessWidget {
     const SizedBox(height: 20),
     Text(pg('App guide'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
     const SizedBox(height: 12),
-    const Text('1. Browse prompt cards on the Home screen.\n\n2. Use search or category filters to find prompts.\n\n3. Tap a card to open its details and view the image.\n\n4. Wait until the prompt text finishes appearing; the Copy button becomes active when ready.\n\n5. Tap Copy prompt, then paste it into your favorite AI app.\n\n6. Tap the heart icon to save prompts to Favorites.\n\n7. Open Settings to change language or choose Light, Dark, or Automatic appearance.\n\nPromptGo requires an active internet connection.'),
+    Text(pgGuide()),
     const SizedBox(height: 18),
     StreamBuilder<DatabaseEvent>(stream: FirebaseDatabase.instance.ref('appInfo/creator').onValue, builder: (context, snap) {
       final raw = snap.data?.snapshot.value;
