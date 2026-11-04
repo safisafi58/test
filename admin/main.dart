@@ -2,91 +2,209 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
-const opts = FirebaseOptions(apiKey:'AIzaSyDJ5MIO3mJDu3mJDuP1-0GQ3xiHMI7XR1htO2Kw',appId:'1:451486689188:android:5e9553bce575e168ef8331',messagingSenderId:'451486689188',projectId:'pashto-poetry-new-2c4ba',databaseURL:'https://pashto-poetry-new-2c4ba-default-rtdb.firebaseio.com');
-Future<void> main() async { WidgetsFlutterBinding.ensureInitialized(); await Firebase.initializeApp(options:opts); runApp(const PromptGoAdmin()); }
-class PromptGoAdmin extends StatelessWidget { const PromptGoAdmin({super.key}); @override Widget build(BuildContext c)=>MaterialApp(title:'PromptGo Admin',debugShowCheckedModeBanner:false,themeMode:ThemeMode.system,theme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xff6750a4),brightness:Brightness.light),useMaterial3:true,scaffoldBackgroundColor:const Color(0xfff7f7fa)),darkTheme:ThemeData(colorScheme:ColorScheme.fromSeed(seedColor:const Color(0xffb9a5ff),brightness:Brightness.dark),useMaterial3:true,scaffoldBackgroundColor:const Color(0xff101014)),home:const Splash()); }
-class Splash extends StatefulWidget { const Splash({super.key}); @override State<Splash> createState()=>_SplashState(); }
-class _SplashState extends State<Splash> { @override void initState(){super.initState();Future.delayed(const Duration(milliseconds:1500),(){if(mounted)Navigator.pushReplacement(context,MaterialPageRoute(builder:(_)=>const Gate()));});} @override Widget build(BuildContext c)=>Scaffold(body:Center(child:Column(mainAxisSize:MainAxisSize.min,children:[Container(width:88,height:88,decoration:BoxDecoration(color:Theme.of(c).colorScheme.primary,borderRadius:BorderRadius.circular(28)),child:const Icon(Icons.auto_awesome_rounded,color:Colors.white,size:48)),const SizedBox(height:18),const Text('PromptGo',style:TextStyle(fontSize:31,fontWeight:FontWeight.w900)),const SizedBox(height:6),Text('PROMPT LIBRARY • ADMIN',style:TextStyle(letterSpacing:2,color:Theme.of(c).colorScheme.onSurfaceVariant)),const SizedBox(height:28),const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2))]))); }
-class Gate extends StatelessWidget { const Gate({super.key}); @override Widget build(BuildContext c)=>StreamBuilder<User?>(stream:FirebaseAuth.instance.authStateChanges(),builder:(c,s)=>s.connectionState==ConnectionState.waiting?const Scaffold(body:Center(child:CircularProgressIndicator())):s.data==null?const LoginPage():const AdminHome()); }
-class LoginPage extends StatefulWidget { const LoginPage({super.key}); @override State<LoginPage> createState()=>_LoginPageState(); }
-class _LoginPageState extends State<LoginPage>{final email=TextEditingController(),pass=TextEditingController();bool busy=false,hide=true;String? error;Future<void> login()async{setState(() { busy = true; error = null; });try{await FirebaseAuth.instance.signInWithEmailAndPassword(email:email.text.trim(),password:pass.text);}on FirebaseAuthException catch(e){setState(()=>error=e.message??e.code);}finally{if(mounted)setState(()=>busy=false);}}@override void dispose(){email.dispose();pass.dispose();super.dispose();}@override Widget build(BuildContext c)=>Scaffold(body:Center(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:430),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[Center(child:Container(width:76,height:76,decoration:BoxDecoration(color:Theme.of(c).colorScheme.primary,borderRadius:BorderRadius.circular(24)),child:const Icon(Icons.auto_awesome,color:Colors.white,size:40))),const SizedBox(height:22),const Text('Welcome back',textAlign:TextAlign.center,style:TextStyle(fontSize:28,fontWeight:FontWeight.w800)),const SizedBox(height:7),Text('Sign in to manage your prompt library',textAlign:TextAlign.center,style:TextStyle(color:Theme.of(c).colorScheme.onSurfaceVariant)),const SizedBox(height:30),TextField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'Email address',prefixIcon:Icon(Icons.mail_outline),border:OutlineInputBorder())),const SizedBox(height:14),TextField(controller:pass,obscureText:hide,decoration:InputDecoration(labelText:'Password',prefixIcon:const Icon(Icons.lock_outline),border:const OutlineInputBorder(),suffixIcon:IconButton(onPressed:()=>setState(()=>hide=!hide),icon:Icon(hide?Icons.visibility_outlined:Icons.visibility_off_outlined)))),if(error!=null)Padding(padding:const EdgeInsets.only(top:12),child:Text(error!,style:const TextStyle(color:Colors.red))),const SizedBox(height:20),SizedBox(height:52,child:FilledButton(onPressed:busy?null:login,child:busy?const SizedBox(width:22,height:22,child:CircularProgressIndicator(strokeWidth:2)):const Text('Sign in'))),const SizedBox(height:14),Text('Admin account is managed in Firebase Authentication.',textAlign:TextAlign.center,style:TextStyle(fontSize:12,color:Theme.of(c).colorScheme.onSurfaceVariant))])))));}
+
+const options = FirebaseOptions(
+  apiKey: 'AIzaSyDJ5MIO3mJDu3mJDuP1-0GQ3xiHMI7XR1htO2Kw',
+  appId: '1:451486689188:android:5e9553bce575e168ef8331',
+  messagingSenderId: '451486689188',
+  projectId: 'pashto-poetry-new-2c4ba',
+  databaseURL: 'https://pashto-poetry-new-2c4ba-default-rtdb.firebaseio.com',
+);
+const promptCategories = <String>[
+  'Video Prompt', 'Kids', 'DP Maker', 'Game', 'Cinematic', 'Anime & Cartoon',
+];
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: options);
+  runApp(const PromptGoAdmin());
+}
+
+class PromptGoAdmin extends StatelessWidget {
+  const PromptGoAdmin({super.key});
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    title: 'PromptGo Admin',
+    debugShowCheckedModeBanner: false,
+    themeMode: ThemeMode.system,
+    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4))),
+    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark)),
+    home: const AdminSplash(),
+  );
+}
+
+class AdminSplash extends StatefulWidget {
+  const AdminSplash({super.key});
+  @override
+  State<AdminSplash> createState() => _AdminSplashState();
+}
+class _AdminSplashState extends State<AdminSplash> {
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 1100), () {
+      if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminGate()));
+    });
+  }
+  @override
+  Widget build(BuildContext context) => const Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+    Icon(Icons.auto_awesome_rounded, size: 72), SizedBox(height: 12),
+    Text('PromptGo Admin', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+    SizedBox(height: 20), CircularProgressIndicator(),
+  ])));
+}
+
+class AdminGate extends StatelessWidget {
+  const AdminGate({super.key});
+  @override
+  Widget build(BuildContext context) => StreamBuilder<User?>(
+    stream: FirebaseAuth.instance.authStateChanges(),
+    builder: (context, snapshot) {
+      if (snapshot.connectionState == ConnectionState.waiting) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return snapshot.data == null ? const AdminLoginPage() : const AdminHome();
+    },
+  );
+}
+
+class AdminLoginPage extends StatefulWidget {
+  const AdminLoginPage({super.key});
+  @override
+  State<AdminLoginPage> createState() => _AdminLoginPageState();
+}
+class _AdminLoginPageState extends State<AdminLoginPage> {
+  final email = TextEditingController();
+  final password = TextEditingController();
+  bool creating = false, busy = false, hidePassword = true;
+  String? error;
+  @override
+  void dispose() { email.dispose(); password.dispose(); super.dispose(); }
+
+  String readableError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+      case 'wrong-password':
+      case 'user-not-found': return 'Email or password is incorrect.';
+      case 'email-already-in-use': return 'This email already has an account. Sign in instead.';
+      case 'weak-password': return 'Password must be at least 6 characters.';
+      case 'invalid-email': return 'Please enter a valid email address.';
+      case 'operation-not-allowed': return 'Enable Email/Password in Firebase Authentication settings.';
+      case 'network-request-failed': return 'Network error. Check your internet connection.';
+      case 'too-many-requests': return 'Too many attempts. Please try again later.';
+      default: return '${e.message ?? e.code} (${e.code})';
+    }
+  }
+
+  Future<void> submit() async {
+    if (email.text.trim().isEmpty || password.text.isEmpty) {
+      setState(() => error = 'Enter your email and password.');
+      return;
+    }
+    setState(() { busy = true; error = null; });
+    try {
+      if (creating) {
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: email.text.trim(), password: password.text,
+        );
+      } else {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email.text.trim(), password: password.text,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (mounted) setState(() => error = readableError(e));
+    } catch (e) {
+      if (mounted) setState(() => error = 'Sign-in failed: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> resetPassword() async {
+    if (email.text.trim().isEmpty) {
+      setState(() => error = 'Enter your email first, then tap Forgot password.');
+      return;
+    }
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email.text.trim());
+      if (mounted) setState(() => error = 'Password reset email sent. Check your inbox.');
+    } on FirebaseAuthException catch (e) {
+      if (mounted) setState(() => error = readableError(e));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    body: Center(child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Icon(Icons.admin_panel_settings_rounded, size: 68, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 18),
+          Text(creating ? 'Create Admin Account' : 'Admin Sign In', textAlign: TextAlign.center, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 8),
+          Text(creating ? 'Create your account to manage PromptGo.' : 'Sign in to manage your prompt library.', textAlign: TextAlign.center),
+          const SizedBox(height: 28),
+          TextField(controller: email, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: const InputDecoration(labelText: 'Email address', prefixIcon: Icon(Icons.email_outlined), border: OutlineInputBorder())),
+          const SizedBox(height: 14),
+          TextField(controller: password, obscureText: hidePassword, decoration: InputDecoration(labelText: 'Password', prefixIcon: const Icon(Icons.lock_outline), border: const OutlineInputBorder(), suffixIcon: IconButton(onPressed: () => setState(() => hidePassword = !hidePassword), icon: Icon(hidePassword ? Icons.visibility : Icons.visibility_off)))),
+          if (error != null) Padding(padding: const EdgeInsets.only(top: 14), child: Text(error!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600))),
+          const SizedBox(height: 18),
+          FilledButton(onPressed: busy ? null : submit, child: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : Text(creating ? 'Create account' : 'Sign in')),
+          if (!creating) TextButton(onPressed: busy ? null : resetPassword, child: const Text('Forgot password?')),
+          TextButton(onPressed: busy ? null : () => setState(() { creating = !creating; error = null; }), child: Text(creating ? 'Already have an account? Sign in' : 'First time? Create admin account')),
+          const SizedBox(height: 8),
+          const Text('Firebase Authentication must have Email/Password enabled.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12)),
+        ],
+      )),
+    )),
+  );
+}
+
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
-
   @override
   Widget build(BuildContext context) {
     final ref = FirebaseDatabase.instance.ref('prompts');
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w800)),
-        actions: [
-          IconButton(
-            onPressed: () => FirebaseAuth.instance.signOut(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => editPrompt(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('New prompt'),
-      ),
+      appBar: AppBar(title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)), actions: [
+        IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
+      ]),
+      floatingActionButton: FloatingActionButton.extended(onPressed: () => editPrompt(context, ref), icon: const Icon(Icons.add), label: const Text('New prompt')),
       body: StreamBuilder<DatabaseEvent>(
         stream: ref.onValue,
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('Database error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(20), child: Text('Database error: ${snapshot.error}')));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
           final raw = snapshot.data!.snapshot.value;
-          if (raw is! Map) {
-            return const Center(child: Text('Your prompt library is empty.'));
-          }
+          if (raw is! Map || raw.isEmpty) return const Center(child: Text('No prompts yet. Tap New prompt to add one.'));
           final entries = raw.entries.toList();
-          if (entries.isEmpty) {
-            return const Center(child: Text('Your prompt library is empty.'));
-          }
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
             itemCount: entries.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 9),
             itemBuilder: (context, index) {
               final entry = entries[index];
+              if (entry.value is! Map) return const SizedBox.shrink();
               final id = entry.key.toString();
               final data = Map<dynamic, dynamic>.from(entry.value as Map);
               final title = (data['title'] ?? 'Untitled').toString();
-              final category = (data['category'] ?? 'General').toString();
-              final promptText = (data['content'] ?? '').toString();
-              return Card(
-                color: Theme.of(context).colorScheme.surfaceContainer,
-                child: ListTile(
-                  title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '$category\n$promptText',
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  isThreeLine: true,
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        editPrompt(context, ref, id: id, old: data);
-                      } else if (value == 'delete') {
-                        deletePrompt(context, ref, id);
-                      }
-                    },
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(value: 'edit', child: Text('Edit')),
-                      PopupMenuItem(value: 'delete', child: Text('Delete')),
-                    ],
-                  ),
+              final category = (data['category'] ?? 'Video Prompt').toString();
+              return Card(child: ListTile(
+                title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                subtitle: Text('$category${data['isTrending'] == true ? ' • TRENDING' : ''}\n${data['content'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
+                isThreeLine: true,
+                trailing: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') editPrompt(context, ref, id: id, old: data);
+                    if (value == 'delete') deletePrompt(context, ref, id);
+                  },
+                  itemBuilder: (_) => const [
+                    PopupMenuItem(value: 'edit', child: Text('Edit')),
+                    PopupMenuItem(value: 'delete', child: Text('Delete')),
+                  ],
                 ),
-              );
+              ));
             },
           );
         },
@@ -95,5 +213,59 @@ class AdminHome extends StatelessWidget {
   }
 }
 
-Future<void> editPrompt(BuildContext c,DatabaseReference ref,{String? id,Map<dynamic,dynamic>? old})async{final title=TextEditingController(text:(old?['title']??'').toString()),category=TextEditingController(text:(old?['category']??'General').toString()),content=TextEditingController(text:(old?['content']??'').toString());final key=GlobalKey<FormState>();await showDialog<void>(context:c,builder:(d)=>AlertDialog(title:Text(id==null?'Create prompt':'Edit prompt'),content:Form(key:key,child:SizedBox(width:440,child:SingleChildScrollView(child:Column(mainAxisSize:MainAxisSize.min,children:[TextFormField(controller:title,decoration:const InputDecoration(labelText:'Title'),validator:(v)=>v==null||v.trim().isEmpty?'Enter a title':null),TextFormField(controller:category,decoration:const InputDecoration(labelText:'Category')),TextFormField(controller:content,minLines:5,maxLines:9,decoration:const InputDecoration(labelText:'Prompt text',alignLabelWithHint:true),validator:(v)=>v==null||v.trim().isEmpty?'Enter prompt text':null)])))),actions:[TextButton(onPressed:()=>Navigator.pop(d),child:const Text('Cancel')),FilledButton(onPressed:()async{if(!key.currentState!.validate())return;final data={'title':title.text.trim(),'category':category.text.trim().isEmpty?'General':category.text.trim(),'content':content.text.trim(),'createdAt':old?['createdAt']??ServerValue.timestamp,'updatedAt':ServerValue.timestamp};try{if(id==null){await ref.push().set(data);}else{await ref.child(id).update(data);}if(d.mounted)Navigator.pop(d);}catch(e){if(d.mounted)ScaffoldMessenger.of(d).showSnackBar(SnackBar(content:Text('Save failed: $e')));}},child:const Text('Save'))]));title.dispose();category.dispose();content.dispose();}
-Future<void> deletePrompt(BuildContext c,DatabaseReference ref,String id)async{final yes=await showDialog<bool>(context:c,builder:(d)=>AlertDialog(title:const Text('Delete prompt?'),content:const Text('This prompt will be permanently removed.'),actions:[TextButton(onPressed:()=>Navigator.pop(d,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(d,true),child:const Text('Delete'))]));if(yes==true)await ref.child(id).remove();}
+Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id, Map<dynamic, dynamic>? old}) async {
+  final title = TextEditingController(text: (old?['title'] ?? '').toString());
+  final content = TextEditingController(text: (old?['content'] ?? '').toString());
+  String category = promptCategories.contains(old?['category']) ? old!['category'].toString() : promptCategories.first;
+  bool trending = old?['isTrending'] == true;
+  final formKey = GlobalKey<FormState>();
+  await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (dialogContext, setDialogState) => AlertDialog(
+    title: Text(id == null ? 'Create prompt' : 'Edit prompt'),
+    content: SizedBox(width: 440, child: SingleChildScrollView(child: Form(key: formKey, child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextFormField(controller: title, decoration: const InputDecoration(labelText: 'Title'), validator: (v) => v == null || v.trim().isEmpty ? 'Enter a title' : null),
+      const SizedBox(height: 12),
+      DropdownButtonFormField<String>(
+        value: category,
+        decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
+        items: promptCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+        onChanged: (v) { if (v != null) setDialogState(() => category = v); },
+      ),
+      SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Mark as Trending'), value: trending, onChanged: (v) => setDialogState(() => trending = v)),
+      TextFormField(controller: content, minLines: 4, maxLines: 8, decoration: const InputDecoration(labelText: 'Prompt text'), validator: (v) => v == null || v.trim().isEmpty ? 'Enter prompt text' : null),
+    ]))),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+      FilledButton(onPressed: () async {
+        if (!formKey.currentState!.validate()) return;
+        final data = <String, Object>{
+          'title': title.text.trim(),
+          'category': category,
+          'content': content.text.trim(),
+          'isTrending': trending,
+          'createdAt': old?['createdAt'] ?? ServerValue.timestamp,
+          'updatedAt': ServerValue.timestamp,
+        };
+        try {
+          if (id == null) { await ref.push().set(data); } else { await ref.child(id).update(data); }
+          if (dialogContext.mounted) Navigator.pop(dialogContext);
+        } catch (e) {
+          if (dialogContext.mounted) ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Save failed: $e')));
+        }
+      }, child: const Text('Save')),
+    ],
+  )));
+  title.dispose();
+  content.dispose();
+}
+
+Future<void> deletePrompt(BuildContext context, DatabaseReference ref, String id) async {
+  final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+    title: const Text('Delete prompt?'),
+    content: const Text('This prompt will be permanently removed.'),
+    actions: [
+      TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+      FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Delete')),
+    ],
+  ));
+  if (confirmed == true) await ref.child(id).remove();
+}
