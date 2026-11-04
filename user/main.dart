@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
@@ -66,12 +68,23 @@ class PromptLibrary extends StatefulWidget {
 }
 class _PromptLibraryState extends State<PromptLibrary> {
   final searchController = TextEditingController();
+  final PageController _latestPageController = PageController(viewportFraction: 0.92);
+  Timer? _latestSlideTimer;
+  List<Map<String, dynamic>> _latestSliderPosts = [];
   final Set<String> favoriteIds = <String>{};
   String selectedCategory = 'All';
   bool showFavoritesOnly = false;
 
   @override
-  void initState() { super.initState(); _loadFavorites(); }
+  void initState() {
+    super.initState();
+    _loadFavorites();
+    _latestSlideTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted || !_latestPageController.hasClients || _latestSliderPosts.length < 2) return;
+      final current = (_latestPageController.page ?? 0).round();
+      _latestPageController.animateToPage((current + 1) % _latestSliderPosts.length, duration: const Duration(milliseconds: 550), curve: Curves.easeInOut);
+    });
+  }
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
@@ -83,7 +96,12 @@ class _PromptLibraryState extends State<PromptLibrary> {
     await prefs.setStringList('promptgo_favorites', favoriteIds.toList());
   }
   @override
-  void dispose() { searchController.dispose(); super.dispose(); }
+  void dispose() {
+    _latestSlideTimer?.cancel();
+    _latestPageController.dispose();
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,12 +129,14 @@ class _PromptLibraryState extends State<PromptLibrary> {
                 'title': (data['title'] ?? 'Untitled').toString(),
                 'category': (data['category'] ?? 'Video Prompt').toString(),
                 'content': (data['content'] ?? '').toString(),
+                'imageUrl': (data['imageUrl'] ?? '').toString(),
                 'createdAt': data['createdAt'],
                 'isTrending': data['isTrending'] == true,
               });
             }
           }
           prompts.sort((a, b) => (b['createdAt'] is num ? b['createdAt'] as num : 0).compareTo(a['createdAt'] is num ? a['createdAt'] as num : 0));
+          _latestSliderPosts = prompts.take(10).toList();
           final query = searchController.text.trim().toLowerCase();
           final visible = prompts.where((p) {
             final created = p['createdAt'] is num ? (p['createdAt'] as num).toInt() : 0;
@@ -133,6 +153,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
           }).toList();
 
           return Column(children: [
+            _buildLatestPostsSlider(context),
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: TextField(
               controller: searchController,
               onChanged: (_) => setState(() {}),
@@ -172,6 +193,10 @@ class _PromptLibraryState extends State<PromptLibrary> {
                       child: InkWell(
                         onTap: () => _showDetails(context, p),
                         child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          if ((p['imageUrl'] as String).isNotEmpty) ...[
+                            ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.network(p['imageUrl'] as String, width: double.infinity, height: 150, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(height: 90, alignment: Alignment.center, color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined)))),
+                            const SizedBox(height: 10),
+                          ],
                           Row(children: [
                             Expanded(child: Text(p['title'] as String, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800))),
                             IconButton(onPressed: () => _toggleFavorite(id), icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: favorite ? Colors.pink : null)),
@@ -196,6 +221,35 @@ class _PromptLibraryState extends State<PromptLibrary> {
     );
   }
 
+  Widget _buildLatestPostsSlider(BuildContext context) {
+    final posts = _latestSliderPosts;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 8), child: Row(children: [
+        const Expanded(child: Text('Latest posts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900))),
+        Text('Latest 10', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      ])),
+      SizedBox(height: 184, child: posts.isEmpty
+        ? Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(width: double.infinity, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(18)), alignment: Alignment.center, child: const Text('New prompts will appear here'))
+        : PageView.builder(
+            controller: _latestPageController,
+            itemCount: posts.length,
+            itemBuilder: (context, index) {
+              final p = posts[index];
+              final url = (p['imageUrl'] ?? '').toString();
+              return Padding(padding: const EdgeInsets.only(right: 10), child: ClipRRect(borderRadius: BorderRadius.circular(18), child: Stack(fit: StackFit.expand, children: [
+                if (url.isNotEmpty) Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Theme.of(context).colorScheme.primaryContainer)) else Container(color: Theme.of(context).colorScheme.primaryContainer),
+                DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withValues(alpha: 0.02), Colors.black.withValues(alpha: 0.78)]))),
+                Positioned(left: 16, right: 16, bottom: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text((p['category'] ?? '').toString().toUpperCase(), style: const TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 1.1)),
+                  const SizedBox(height: 4),
+                  Text((p['title'] ?? '').toString(), maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                ])),
+              ])));
+            },
+          )),
+    ]);
+  }
+
   Widget _tag(BuildContext context, String label) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(20)),
@@ -211,6 +265,10 @@ class _PromptLibraryState extends State<PromptLibrary> {
         child: SafeArea(child: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if ((p['imageUrl'] as String).isNotEmpty) ...[
+              ClipRRect(borderRadius: BorderRadius.circular(14), child: Image.network(p['imageUrl'] as String, width: double.infinity, height: 190, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox(height: 80, child: Center(child: Icon(Icons.broken_image_outlined))))),
+              const SizedBox(height: 14),
+            ],
             Text(p['category'] as String, style: TextStyle(color: Theme.of(sheetContext).colorScheme.primary, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             Text(p['title'] as String, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900)),
