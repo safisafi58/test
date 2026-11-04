@@ -295,7 +295,7 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
     if (fullText.isEmpty) { _typingComplete = true; return; }
     _typingTimer = Timer.periodic(const Duration(milliseconds: 18), (timer) {
       if (!mounted) { timer.cancel(); return; }
-      final nextLength = (_typedText.length + 3).clamp(0, fullText.length).toInt();
+      final nextLength = (_typedText.length + 1).clamp(0, fullText.length).toInt();
       setState(() { _typedText = fullText.substring(0, nextLength); if (nextLength >= fullText.length) { _typingComplete = true; timer.cancel(); } });
     });
   }
