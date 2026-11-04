@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const firebaseOptions = FirebaseOptions(
-  apiKey: 'AIzaSyDJ5MIO3mJDu3mJDuP1-0GQ3xiHMI7XR1htO2Kw',
-  appId: '1:451486689188:android:5e9553bce575e168ef8331',
-  messagingSenderId: '451486689188',
-  projectId: 'pashto-poetry-new-2c4ba',
-  databaseURL: 'https://pashto-poetry-new-2c4ba-default-rtdb.firebaseio.com',
+  apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
+  appId: '1:915531372851:android:7198fe96a0cf0c7bce4646',
+  messagingSenderId: '915531372851',
+  projectId: 'romptgo',
+  databaseURL: 'https://romptgo-default-rtdb.firebaseio.com',
 );
 const promptCategories = <String>[
   'All', 'New', 'Trending', 'Video Prompt', 'Kids', 'DP Maker',
