@@ -35,6 +35,25 @@ String pg(String key) {
   return values[promptGoLanguage.value]?[key] ?? values['English']![key] ?? key;
 }
 
+String pgGuide() {
+  const guide = <String,String>{
+    'Pashto':'۱. په کورپاڼه کې د پرامپټونو کارتونه وګورئ.\n\n۲. د لټون او کټګوریو له لارې پرامپټ ومومئ.\n\n۳. پر کارت کلیک وکړئ، انځور او متن وګورئ.\n\n۴. د متن له بشپړېدو وروسته د Copy تڼۍ ووهئ.\n\n۵. کاپي شوی متن په خپلې خوښې AI وسیلې کې وکاروئ.\n\n۶. د زړه نښه ووهئ څو پرامپټ خوښ شوو کې خوندي شي.\n\n۷. په تنظیماتو کې ژبه، رنګ او بڼه بدله کړئ.\n\nPromptGo د کار لپاره انټرنېټ ته اړتیا لري.',
+    'Persian':'۱. کارت‌های پرامپت را در صفحه اصلی مرور کنید.\n\n۲. با جستجو یا دسته‌بندی‌ها پرامپت پیدا کنید.\n\n۳. روی کارت بزنید تا تصویر و متن باز شود.\n\n۴. پس از آماده‌شدن متن، دکمه کپی را بزنید.\n\n۵. متن را در ابزار هوش مصنوعی دلخواه خود استفاده کنید.\n\n۶. با نماد قلب، پرامپت را ذخیره کنید.\n\n۷. زبان و ظاهر را از تنظیمات تغییر دهید.\n\nPromptGo برای کار به اینترنت نیاز دارد.',
+    'Dari':'۱. کارت‌های پرامپت را در صفحه اصلی ببینید.\n\n۲. با جستجو یا دسته‌بندی‌ها پرامپت پیدا کنید.\n\n۳. روی کارت بزنید تا تصویر و متن باز شود.\n\n۴. پس از آماده‌شدن متن، دکمه کاپی را بزنید.\n\n۵. متن را در ابزار هوش مصنوعی دلخواه استفاده کنید.\n\n۶. با نشان قلب، پرامپت را ذخیره کنید.\n\n۷. زبان و ظاهر را از تنظیمات تغییر دهید.\n\nPromptGo برای کار به اینترنت نیاز دارد.',
+    'Urdu':'۱. ہوم اسکرین پر پرامپٹ کارڈز دیکھیں۔\n\n۲. تلاش یا کیٹیگریز سے پرامپٹ تلاش کریں۔\n\n۳. تصویر اور متن کھولنے کے لیے کارڈ پر ٹیپ کریں۔\n\n۴. متن تیار ہونے کے بعد کاپی بٹن دبائیں۔\n\n۵. متن اپنی پسندیدہ AI ایپ میں استعمال کریں۔\n\n۶. دل کے نشان سے پرامپٹ محفوظ کریں۔\n\n۷. سیٹنگز میں زبان اور تھیم تبدیل کریں۔\n\nPromptGo کے لیے انٹرنیٹ ضروری ہے۔',
+    'Arabic':'١. تصفح بطاقات المطالبات في الصفحة الرئيسية.\n\n٢. استخدم البحث أو الفئات للعثور على مطالبة.\n\n٣. اضغط على البطاقة لعرض الصورة والنص.\n\n٤. بعد اكتمال النص اضغط زر النسخ.\n\n٥. استخدم النص في تطبيق الذكاء الاصطناعي المفضل لديك.\n\n٦. احفظ المطالبات باستخدام رمز القلب.\n\n٧. غيّر اللغة والمظهر من الإعدادات.\n\nيتطلب PromptGo اتصالاً بالإنترنت.',
+    'English':'1. Browse prompt cards on the Home screen.\n\n2. Use search or categories to find prompts.\n\n3. Tap a card to view its image and text.\n\n4. When the text is ready, tap Copy.\n\n5. Paste it into your preferred AI tool.\n\n6. Save prompts with the heart icon.\n\n7. Change language and appearance in Settings.\n\nPromptGo requires an internet connection.',
+    'German':'1. Durchsuche die Prompt-Karten auf der Startseite.\n\n2. Nutze Suche oder Kategorien.\n\n3. Tippe auf eine Karte, um Bild und Text zu öffnen.\n\n4. Tippe nach der Textanzeige auf Kopieren.\n\n5. Verwende den Text in deinem KI-Tool.\n\n6. Speichere Prompts mit dem Herzsymbol.\n\n7. Ändere Sprache und Darstellung in den Einstellungen.\n\nPromptGo benötigt eine Internetverbindung.',
+    'French':'1. Parcourez les cartes de prompts sur l’accueil.\n\n2. Utilisez la recherche ou les catégories.\n\n3. Touchez une carte pour voir son image et son texte.\n\n4. Lorsque le texte est prêt, touchez Copier.\n\n5. Collez-le dans votre outil IA préféré.\n\n6. Enregistrez les prompts avec le cœur.\n\n7. Changez la langue et l’apparence dans les paramètres.\n\nPromptGo nécessite Internet.',
+    'Spanish':'1. Explora las tarjetas de prompts en Inicio.\n\n2. Usa la búsqueda o las categorías.\n\n3. Toca una tarjeta para ver su imagen y texto.\n\n4. Cuando el texto esté listo, toca Copiar.\n\n5. Pégalo en tu herramienta de IA favorita.\n\n6. Guarda prompts con el icono del corazón.\n\n7. Cambia idioma y apariencia en Ajustes.\n\nPromptGo necesita conexión a Internet.',
+    'Turkish':'1. Ana ekrandaki prompt kartlarına göz atın.\n\n2. Arama veya kategorileri kullanın.\n\n3. Görsel ve metni açmak için karta dokunun.\n\n4. Metin hazır olduğunda Kopyala’ya dokunun.\n\n5. Metni tercih ettiğiniz yapay zekâ aracında kullanın.\n\n6. Kalp simgesiyle promptları kaydedin.\n\n7. Ayarlardan dili ve görünümü değiştirin.\n\nPromptGo internet bağlantısı gerektirir.',
+    'Chinese':'1. 浏览主页上的提示词卡片。\n\n2. 使用搜索或分类查找提示词。\n\n3. 点击卡片查看图片和文本。\n\n4. 文本准备好后点击复制。\n\n5. 将文本粘贴到常用的 AI 工具中。\n\n6. 点击心形图标收藏提示词。\n\n7. 在设置中更改语言和外观。\n\nPromptGo 需要互联网连接。',
+    'Hindi':'1. होम स्क्रीन पर प्रॉम्प्ट कार्ड देखें।\n\n2. खोज या श्रेणियों से प्रॉम्प्ट ढूँढें।\n\n3. चित्र और टेक्स्ट देखने के लिए कार्ड टैप करें।\n\n4. टेक्स्ट तैयार होने पर कॉपी दबाएँ।\n\n5. इसे अपने पसंदीदा AI टूल में पेस्ट करें।\n\n6. दिल के आइकन से प्रॉम्प्ट सेव करें।\n\n7. सेटिंग्स में भाषा और रूप बदलें।\n\nPromptGo के लिए इंटरनेट आवश्यक है।',
+    'Bengali':'১. হোম স্ক্রিনে প্রম্পট কার্ড দেখুন।\n\n২. অনুসন্ধান বা বিভাগ ব্যবহার করে প্রম্পট খুঁজুন।\n\n৩. ছবি ও লেখা দেখতে কার্ডে চাপ দিন।\n\n৪. লেখা প্রস্তুত হলে কপি চাপুন।\n\n৫. আপনার পছন্দের AI টুলে লেখাটি ব্যবহার করুন।\n\n৬. হার্ট আইকনে প্রম্পট সংরক্ষণ করুন।\n\n৭. সেটিংসে ভাষা ও চেহারা পরিবর্তন করুন।\n\nPromptGo ব্যবহার করতে ইন্টারনেট প্রয়োজন।',
+  };
+  return guide[promptGoLanguage.value] ?? guide['English']!;
+}
+
 
 const firebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
@@ -71,8 +90,8 @@ class PromptGoUser extends StatelessWidget {
     title: 'PromptGo',
     debugShowCheckedModeBanner: false,
     themeMode: promptGoThemeMode.value,
-    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value), scaffoldBackgroundColor: const Color(0xfff7f7fa)),
-    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value, brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014)),
+    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value), scaffoldBackgroundColor: const Color(0xfff7f7fa), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
+    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value, brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
     builder: (context, child) => Directionality(textDirection: promptGoIsRtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
     home: const PromptGoSplash(),
   ));
@@ -100,7 +119,7 @@ class _PromptGoSplashState extends State<PromptGoSplash> with SingleTickerProvid
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(body: Center(child: AnimatedBuilder(animation: _controller, builder: (context, _) => FadeTransition(opacity: _fade, child: ScaleTransition(scale: _scale, child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primaryContainer, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 35, spreadRadius: 5)]), child: ColorFiltered(colorFilter: ColorFilter.mode(dark ? Colors.white : Colors.transparent, BlendMode.srcATop), child: Image.asset('assets/sp.png', width: 138, height: 138, fit: BoxFit.contain))),
+      Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primaryContainer, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 35, spreadRadius: 5)]), child: ColorFiltered(colorFilter: ColorFilter.mode(dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 138, height: 138, fit: BoxFit.contain))),
       const SizedBox(height: 22),
       const Text('PromptGo', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: .5)),
       const SizedBox(height: 7),
@@ -158,7 +177,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
     return Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: Row(children: [Image.asset('assets/sp.png', width: 30, height: 30, fit: BoxFit.contain), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
+        title: Row(children: [ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 30, height: 30, fit: BoxFit.contain)), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
         actions: [
           IconButton(tooltip: 'Favorites', onPressed: () => setState(() => showFavoritesOnly = !showFavoritesOnly), icon: Icon(showFavoritesOnly ? Icons.favorite : Icons.favorite_border)),
         ],
@@ -298,7 +317,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   }
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
-    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Image.asset('assets/sp.png', width: 42, height: 42, fit: BoxFit.contain))),
+    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 42, height: 42, fit: BoxFit.contain)))),
     ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); _showThemePicker(context); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
@@ -334,7 +353,7 @@ class AboutPromptGoPage extends StatelessWidget {
   const AboutPromptGoPage({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('About'))), body: ListView(padding: const EdgeInsets.all(20), children: [
-    Center(child: Image.asset('assets/sp.png', width: 76, height: 76)),
+    Center(child: ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 76, height: 76))),
     const SizedBox(height: 10),
     const Center(child: Text('PromptGo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900))),
     const SizedBox(height: 20),
