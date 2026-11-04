@@ -5,6 +5,8 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as html_parser;
 import 'package:flutter/cupertino.dart';
 
 const options = FirebaseOptions(
@@ -248,11 +250,13 @@ class AdminHome extends StatelessWidget {
         UserAccountsDrawerHeader(margin: EdgeInsets.zero, accountName: const Text('Admin Profile', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? 'Admin account'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30))),
         ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
         ListTile(leading: const Icon(Icons.manage_accounts_outlined), title: const Text('App information & creator'), subtitle: const Text('Edit creator details and contacts'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())); }),
+        ListTile(leading: const Icon(Icons.telegram), title: const Text('Add Telegram post'), subtitle: const Text('Import image and text from a public channel'), onTap: () { Navigator.pop(context); addTelegramPrompt(context, ref); }),
         ListTile(leading: const Icon(Icons.system_update_alt), title: const Text('App update'), subtitle: const Text('Publish a required user app update'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage(initialTab: 1))); }),
         const ListTile(leading: Icon(Icons.info_outline), title: Text('PromptGo Admin'), subtitle: Text('Version 1.0.0')),
         ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), onTap: () { Navigator.pop(context); FirebaseAuth.instance.signOut(); }),
       ]))),
       appBar: AppBar(title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)), actions: [
+        IconButton(tooltip: 'Add Telegram post', onPressed: () => addTelegramPrompt(context, ref), icon: const Icon(Icons.telegram)),
         IconButton(tooltip: 'App settings', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())), icon: const Icon(Icons.settings_suggest_outlined)),
         IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
       ]),
@@ -299,6 +303,132 @@ class AdminHome extends StatelessWidget {
       ),
     );
   }
+}
+
+
+/// Imports a post from a PUBLIC Telegram channel and saves its photo and caption
+/// into the same Firebase fields used by regular prompts. The channel name is
+/// deliberately not stored as a display title or shown in the user app.
+Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) async {
+  final link = TextEditingController();
+  final title = TextEditingController();
+  String category = promptCategories.first;
+  bool busy = false;
+  final formKey = GlobalKey<FormState>();
+
+  String? parsePostPath(String raw) {
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) return null;
+    if (uri.host != 't.me' && uri.host != 'www.t.me') return null;
+    final parts = uri.pathSegments.where((e) => e.isNotEmpty).toList();
+    if (parts.isEmpty) return null;
+    final offset = parts.first == 's' ? 1 : 0;
+    if (parts.length < offset + 2) return null;
+    final channel = parts[offset];
+    final postId = parts[offset + 1];
+    if (channel.isEmpty || int.tryParse(postId) == null) return null;
+    return '$channel/$postId';
+  }
+
+  await showDialog<void>(
+    context: context,
+    barrierDismissible: !busy,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (dialogContext, setDialogState) => AlertDialog(
+        title: const Row(children: [
+          Icon(Icons.telegram, color: Color(0xff229ED9)),
+          SizedBox(width: 10),
+          Expanded(child: Text('Add Telegram post')),
+        ]),
+        content: SizedBox(
+          width: 440,
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Paste a post link from a public Telegram channel. PromptGo will import its photo and caption.', style: TextStyle(height: 1.4)),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: link,
+                  keyboardType: TextInputType.url,
+                  decoration: const InputDecoration(labelText: 'Telegram post link', hintText: 'https://t.me/channel/123', prefixIcon: Icon(Icons.link)),
+                  validator: (v) => parsePostPath(v ?? '') == null ? 'Enter a valid public Telegram post link' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(controller: title, decoration: const InputDecoration(labelText: 'Display title', hintText: 'Optional title')),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: category,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: promptCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) { if (v != null) setDialogState(() => category = v); },
+                ),
+                if (busy) const Padding(padding: EdgeInsets.only(top: 16), child: LinearProgressIndicator()),
+              ]),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: busy ? null : () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton.icon(
+            onPressed: busy ? null : () async {
+              if (!formKey.currentState!.validate()) return;
+              setDialogState(() => busy = true);
+              try {
+                final path = parsePostPath(link.text)!;
+                final embedUri = Uri.parse('https://t.me/s/$path?embed=1&mode=tme');
+                final response = await http.get(embedUri, headers: const {
+                  'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36',
+                }).timeout(const Duration(seconds: 20));
+                if (response.statusCode != 200) {
+                  throw Exception('Telegram could not open this post. Check that the channel is public.');
+                }
+                final document = html_parser.parse(response.body);
+                final textElement = document.querySelector('.tgme_widget_message_text');
+                final caption = (textElement?.text ?? '').trim();
+                final photoElement = document.querySelector('.tgme_widget_message_photo_wrap');
+                final photoStyle = photoElement?.attributes['style'] ?? '';
+                final photoMatch = RegExp("url\\(['\"]?(.*?)['\"]?\\)").firstMatch(photoStyle);
+                var photoUrl = photoMatch?.group(1) ?? '';
+                if (photoUrl.isEmpty) {
+                  photoUrl = document.querySelector('meta[property="og:image"]')?.attributes['content'] ?? '';
+                }
+                if (caption.isEmpty) {
+                  throw Exception('No text was found in this Telegram post. Please use a post that contains the prompt text.');
+                }
+                if (!photoUrl.startsWith('https://')) {
+                  throw Exception('No public photo was found in this Telegram post. Please check the link.');
+                }
+                final data = <String, Object>{
+                  'title': title.text.trim().isEmpty ? 'Telegram Prompt' : title.text.trim(),
+                  'category': category,
+                  'content': caption,
+                  'imageUrl': photoUrl,
+                  'sourceType': 'telegram',
+                  'telegramUrl': link.text.trim(),
+                  'isTrending': false,
+                  'createdAt': ServerValue.timestamp,
+                  'updatedAt': ServerValue.timestamp,
+                };
+                await ref.push().set(data);
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Telegram photo and prompt imported successfully.')));
+              } catch (e) {
+                if (dialogContext.mounted) {
+                  setDialogState(() => busy = false);
+                  ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Import failed: $e')));
+                }
+              }
+            },
+            icon: const Icon(Icons.download_rounded),
+            label: const Text('Import post'),
+          ),
+        ],
+      ),
+    ),
+  );
+  link.dispose();
+  title.dispose();
 }
 
 Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id, Map<dynamic, dynamic>? old}) async {
