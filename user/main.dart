@@ -73,6 +73,25 @@ String pgContact(String key) {
   return labels[promptGoLanguage.value]?[key] ?? key;
 }
 
+String pgPrivacySummary() {
+  const summaries = <String,String>{
+    'Pashto':'PromptGo د پرامپټونو، جوړونکي معلوماتو او اپډېټ لپاره له Firebase سره نښلي. اپ یوازې آنلاین کار کوي او د نوو پوسټونو خبرتیاوې اختیاري دي.',
+    'Persian':'PromptGo برای نمایش پرامپت‌ها، اطلاعات سازنده و به‌روزرسانی‌ها به Firebase متصل می‌شود. برنامه فقط آنلاین کار می‌کند و اعلان‌های پست‌های جدید اختیاری است.',
+    'Dari':'PromptGo برای نمایش پرامپت‌ها، معلومات سازنده و به‌روزرسانی‌ها به Firebase وصل می‌شود. برنامه تنها آنلاین کار می‌کند و اطلاعیه‌های پست تازه اختیاری است.',
+    'Urdu':'PromptGo پرامپٹس، تخلیق کار کی معلومات اور اپ ڈیٹس دکھانے کے لیے Firebase سے جڑتا ہے۔ ایپ صرف آن لائن کام کرتی ہے اور نئی پوسٹس کی اطلاعات اختیاری ہیں۔',
+    'Arabic':'يتصل PromptGo بخدمة Firebase لعرض المطالبات ومعلومات المنشئ والتحديثات. يعمل التطبيق عبر الإنترنت فقط، وإشعارات المنشورات الجديدة اختيارية.',
+    'English':'PromptGo connects to Firebase to display prompts, creator information and app updates. The app works online only, and new-post notifications are optional.',
+    'German':'PromptGo verbindet sich mit Firebase, um Prompts, Erstellerinformationen und Updates anzuzeigen. Die App funktioniert nur online; Benachrichtigungen sind optional.',
+    'French':'PromptGo se connecte à Firebase pour afficher les prompts, les informations du créateur et les mises à jour. L’application fonctionne uniquement en ligne ; les notifications sont facultatives.',
+    'Spanish':'PromptGo se conecta a Firebase para mostrar prompts, información del creador y actualizaciones. La aplicación funciona solo en línea y las notificaciones son opcionales.',
+    'Turkish':'PromptGo; promptları, oluşturucu bilgilerini ve güncellemeleri göstermek için Firebase’e bağlanır. Uygulama yalnızca çevrimiçi çalışır; bildirimler isteğe bağlıdır.',
+    'Chinese':'PromptGo 连接 Firebase 以显示提示词、创作者信息和应用更新。应用仅支持在线使用，新帖通知为可选功能。',
+    'Hindi':'PromptGo प्रॉम्प्ट, निर्माता की जानकारी और अपडेट दिखाने के लिए Firebase से जुड़ता है। ऐप केवल ऑनलाइन काम करता है और नई पोस्ट की सूचनाएँ वैकल्पिक हैं।',
+    'Bengali':'PromptGo প্রম্পট, নির্মাতার তথ্য ও অ্যাপ আপডেট দেখাতে Firebase-এর সঙ্গে সংযুক্ত হয়। অ্যাপটি শুধু অনলাইনে কাজ করে এবং নতুন পোস্টের নোটিফিকেশন ঐচ্ছিক।',
+  };
+  return summaries[promptGoLanguage.value] ?? summaries['English']!;
+}
+
 
 const firebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
@@ -403,7 +422,7 @@ class AboutPromptGoPage extends StatelessWidget {
     }),
     const SizedBox(height: 12),
     Text(pgContact('Privacy Policy'), style: const TextStyle(fontWeight: FontWeight.w800)),
-    const Text('PromptGo uses Firebase to display online prompts and app information. It does not provide offline access. Notifications are optional and can be disabled in Android settings.'),
+    Text(pgPrivacySummary()),
     const SizedBox(height: 14), const Text('Version 1.0.0 • Ideas into action', style: TextStyle(fontWeight: FontWeight.w700)),
   ]));
 }
