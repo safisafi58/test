@@ -185,7 +185,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
             return categoryMatch && favoriteMatch && searchMatch;
           }).toList();
 
-          return Column(children: [
+          return SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _buildLatestPostsSlider(context),
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: TextField(
               controller: searchController,
@@ -207,13 +207,15 @@ class _PromptLibraryState extends State<PromptLibrary> {
               },
             )),
             const SizedBox(height: 10),
-            Expanded(child: visible.isEmpty
+            visible.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   Icon(showFavoritesOnly ? Icons.favorite_border : Icons.search_off, size: 54, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(height: 12),
                   Text(showFavoritesOnly ? 'No favorites yet' : 'No prompts found', style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
                 ]))
               : GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
                   itemCount: visible.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.82),
@@ -231,8 +233,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                     ]))); 
                   },
                 ),
-            ),
-          ]);
+          ]));
         },
       ),
     );
