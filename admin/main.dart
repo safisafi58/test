@@ -167,6 +167,12 @@ class AdminHome extends StatelessWidget {
   Widget build(BuildContext context) {
     final ref = FirebaseDatabase.instance.ref('prompts');
     return Scaffold(
+      drawer: Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
+        UserAccountsDrawerHeader(margin: EdgeInsets.zero, accountName: const Text('Admin Profile', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? 'Admin account'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30))),
+        ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
+        const ListTile(leading: Icon(Icons.info_outline), title: Text('PromptGo Admin'), subtitle: Text('Version 1.0.0')),
+        ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), onTap: () { Navigator.pop(context); FirebaseAuth.instance.signOut(); }),
+      ]))),
       appBar: AppBar(title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)), actions: [
         IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
       ]),
