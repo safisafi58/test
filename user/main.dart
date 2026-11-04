@@ -127,6 +127,7 @@ class _PromptGoSplashState extends State<PromptGoSplash> with SingleTickerProvid
       const SizedBox(height: 30), SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
     ])))));
   }
+}
 
 class PromptLibrary extends StatefulWidget {
   const PromptLibrary({super.key});
