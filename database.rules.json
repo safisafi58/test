@@ -3,6 +3,14 @@
     "prompts": {
       ".read": true,
       ".write": "auth != null"
+    },
+    "appInfo": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "appUpdate": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }
