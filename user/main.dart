@@ -304,7 +304,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   void initState() {
     super.initState();
     _loadFavorites();
-    FirebaseMessaging.instance.subscribeToTopic('promptgo_new_posts').catchError((_) {});
+    _enableNewPostNotifications();
     _updateSubscription = FirebaseDatabase.instance.ref('appUpdate').onValue.listen((event) async {
       if (_updateScreenShown || !mounted || event.snapshot.value is! Map) return;
       final raw = Map<dynamic,dynamic>.from(event.snapshot.value as Map);
@@ -331,6 +331,24 @@ class _PromptLibraryState extends State<PromptLibrary> {
       _latestPageController.animateToPage((current + 1) % _latestSliderPosts.length, duration: const Duration(milliseconds: 550), curve: Curves.easeInOut);
     });
   }
+  Future<void> _enableNewPostNotifications() async {
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final permission = await messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
+      final allowed = permission.authorizationStatus == AuthorizationStatus.authorized ||
+          permission.authorizationStatus == AuthorizationStatus.provisional;
+      if (!allowed) return;
+      await messaging.subscribeToTopic('promptgo_new_posts');
+    } catch (_) {
+      // Notification permission or network errors must not prevent app usage.
+    }
+  }
+
   Future<void> _loadFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
