@@ -5,6 +5,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
@@ -174,7 +175,7 @@ class _PromptGoSplashState extends State<PromptGoSplash> with SingleTickerProvid
       const SizedBox(height: 7),
       Text('IDEAS INTO ACTION', style: TextStyle(letterSpacing: 3, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       const SizedBox(height: 30), SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
-    ])))));
+    ]))))));
   }
 }
 
@@ -550,7 +551,7 @@ class OnlineGate extends StatelessWidget {
         const Text('Internet connection required', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
         const SizedBox(height: 8), const Text('PromptGo works online only. Connect to the internet and try again.', textAlign: TextAlign.center),
         const SizedBox(height: 20), const CircularProgressIndicator(),
-      ]))));
+      ])))));
       return FutureBuilder<Map<String,dynamic>?>(future: _requiredUpdate(), builder: (context, update) {
         if (update.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
         if (update.hasError) return const Scaffold(body: Center(child: Text('Could not check app version. Please reconnect.')));
