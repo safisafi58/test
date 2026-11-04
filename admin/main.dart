@@ -1,6 +1,9 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 const options = FirebaseOptions(
@@ -9,6 +12,7 @@ const options = FirebaseOptions(
   messagingSenderId: '915531372851',
   projectId: 'romptgo',
   databaseURL: 'https://romptgo-default-rtdb.firebaseio.com',
+  storageBucket: 'romptgo.firebasestorage.app',
 );
 const promptCategories = <String>[
   'Video Prompt', 'Kids', 'DP Maker', 'Game', 'Cinematic', 'Anime & Cartoon',
@@ -337,19 +341,32 @@ Future<void> editCreatorInfo(BuildContext context, Map<dynamic,dynamic> old) asy
   final whatsapp = TextEditingController(text: (old['whatsapp'] ?? '').toString());
   final extra = TextEditingController(text: (old['extraContact'] ?? '').toString());
   final key = GlobalKey<FormState>();
-  await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+  bool uploading = false;
+  await showDialog<void>(context: context, builder: (ctx) => StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
     title: const Text('Creator information'),
     content: SizedBox(width: 460, child: SingleChildScrollView(child: Form(key:key, child: Column(mainAxisSize:MainAxisSize.min,children:[
       TextFormField(controller:name,decoration:const InputDecoration(labelText:'Creator name'),validator:(v)=>v==null||v.trim().isEmpty?'Enter a name':null),
       TextFormField(controller:bio,minLines:3,maxLines:5,decoration:const InputDecoration(labelText:'Description / Bio')),
-      TextFormField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Profile image URL')),
+      TextFormField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Profile image URL (or upload below)')),
+      OutlinedButton.icon(onPressed:uploading?null:() async {
+        final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1200);
+        if(picked==null) return;
+        setDialog(()=>uploading=true);
+        try {
+          final fileRef=FirebaseStorage.instance.ref('creator/profile_${DateTime.now().millisecondsSinceEpoch}.jpg');
+          await fileRef.putFile(File(picked.path));
+          image.text=await fileRef.getDownloadURL();
+        } catch(e) {
+          if(ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Image upload failed: $e')));
+        } finally { if(ctx.mounted) setDialog(()=>uploading=false); }
+      },icon:uploading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.photo_library_outlined),label:Text(uploading?'Uploading image...':'Choose and upload profile image')),
       TextFormField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'Email')),
       TextFormField(controller:whatsapp,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'WhatsApp number')),
       TextFormField(controller:extra,decoration:const InputDecoration(labelText:'Other contact details')),
     ])))),
     actions:[
-      TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
-      FilledButton(onPressed:() async {
+      TextButton(onPressed:uploading?null:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+      FilledButton(onPressed:uploading?null:() async {
         if(!key.currentState!.validate()) return;
         try {
           await FirebaseDatabase.instance.ref('appInfo/creator').set({
@@ -362,7 +379,7 @@ Future<void> editCreatorInfo(BuildContext context, Map<dynamic,dynamic> old) asy
         } catch(e) { if(ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Save failed: $e'))); }
       },child:const Text('Save')),
     ],
-  ));
+  )));
   name.dispose();bio.dispose();image.dispose();email.dispose();whatsapp.dispose();extra.dispose();
 }
 
