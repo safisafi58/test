@@ -376,7 +376,8 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
               setDialogState(() => busy = true);
               try {
                 final path = parsePostPath(link.text)!;
-                final embedUri = Uri.parse('https://t.me/s/$path?embed=1&mode=tme');
+                // Request the exact Telegram post, not the channel feed.
+                final embedUri = Uri.parse('https://t.me/$path?embed=1&mode=tme');
                 final response = await http.get(embedUri, headers: const {
                   'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120.0 Mobile Safari/537.36',
                 }).timeout(const Duration(seconds: 20));
@@ -384,12 +385,20 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                   throw Exception('Telegram could not open this post. Check that the channel is public.');
                 }
                 final document = html_parser.parse(response.body);
-                final textElement = document.querySelector('.tgme_widget_message_text');
+                final postElement = document.querySelector('.tgme_widget_message_wrap[data-post="$path"]')
+                    ?? document.querySelector('.tgme_widget_message');
+                if (postElement == null) {
+                  throw Exception('The exact Telegram post was not found. Copy the link directly from that photo post.');
+                }
+                final textElement = postElement.querySelector('.tgme_widget_message_text');
                 final caption = (textElement?.text ?? '').trim();
-                final photoElement = document.querySelector('.tgme_widget_message_photo_wrap');
+                final photoElement = postElement.querySelector('.tgme_widget_message_photo_wrap');
                 final photoStyle = photoElement?.attributes['style'] ?? '';
-                final photoMatch = RegExp("url\\(['\"]?(.*?)['\"]?\\)").firstMatch(photoStyle);
+                final photoMatch = RegExp("url\\(['\\"]?(.*?)['\\"]?\\)").firstMatch(photoStyle);
                 var photoUrl = photoMatch?.group(1) ?? '';
+                if (photoUrl.isEmpty) {
+                  photoUrl = postElement.querySelector('img.tgme_widget_message_photo')?.attributes['src'] ?? '';
+                }
                 if (photoUrl.isEmpty) {
                   photoUrl = document.querySelector('meta[property="og:image"]')?.attributes['content'] ?? '';
                 }
@@ -400,7 +409,7 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                   throw Exception('No public photo was found in this Telegram post. Please check the link.');
                 }
                 final data = <String, Object>{
-                  'title': title.text.trim().isEmpty ? 'Telegram Prompt' : title.text.trim(),
+                  'title': title.text.trim().isEmpty ? (caption.split('\\n').first.trim().length > 60 ? caption.split('\\n').first.trim().substring(0, 60) : caption.split('\\n').first.trim()) : title.text.trim(),
                   'category': category,
                   'content': caption,
                   'imageUrl': photoUrl,
