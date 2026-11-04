@@ -266,7 +266,7 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
     DateTime end = DateTime.fromMillisecondsSinceEpoch(old?['endAt'] is num ? (old!['endAt'] as num).toInt() : DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch);
     bool enabled = old?['enabled'] != false;
     String? error;
-    String fmt(DateTime d) => '\${d.year.toString().padLeft(4,'0')}-\${d.month.toString().padLeft(2,'0')}-\${d.day.toString().padLeft(2,'0')}  \${d.hour.toString().padLeft(2,'0')}:\${d.minute.toString().padLeft(2,'0')}';
+    String fmt(DateTime d) => '${d.year.toString().padLeft(4,'0')}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}  ${d.hour.toString().padLeft(2,'0')}:${d.minute.toString().padLeft(2,'0')}';
     await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
       title: Text(id == null ? 'Create advertisement' : 'Edit advertisement'),
       content: SizedBox(width: 460, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -316,7 +316,7 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
     appBar: AppBar(title: const Text('Advertisements')),
     floatingActionButton: FloatingActionButton.extended(onPressed: () => _editAd(), icon: const Icon(Icons.add), label: const Text('New ad')),
     body: StreamBuilder<DatabaseEvent>(stream: adsRef.onValue, builder: (context, snapshot) {
-      if (snapshot.hasError) return Center(child: Text('Database error: \${snapshot.error}'));
+      if (snapshot.hasError) return Center(child: Text('Database error: ${snapshot.error}'));
       if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
       final raw = snapshot.data!.snapshot.value;
       if (raw is! Map || raw.isEmpty) return const Center(child: Text('No advertisements yet. Tap New ad.'));
@@ -333,7 +333,7 @@ class _AdminAdsPageState extends State<AdminAdsPage> {
           return Card(child: ListTile(
             leading: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network((data['imageUrl'] ?? '').toString(), width: 58, height: 58, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox(width:58,height:58,child: Icon(Icons.image_not_supported)))),
             title: Text((data['title'] ?? 'Advertisement').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('\${active ? 'LIVE NOW' : data['enabled'] == true ? 'Scheduled / inactive' : 'Disabled'}\\n\${startAt == null ? '' : startAt.toLocal()} → \${endAt == null ? '' : endAt.toLocal()}', maxLines: 3),
+            subtitle: Text('${active ? 'LIVE NOW' : data['enabled'] == true ? 'Scheduled / inactive' : 'Disabled'}\n${startAt == null ? '' : startAt.toLocal()} → ${endAt == null ? '' : endAt.toLocal()}', maxLines: 3),
             isThreeLine: true,
             trailing: PopupMenuButton<String>(onSelected: (v) {
               if (v == 'edit') _editAd(id: id, old: data);
@@ -598,7 +598,7 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                   throw Exception('No public photo was found in this Telegram post. Please check the link.');
                 }
                 final data = <String, Object>{
-                  'title': title.text.trim().isEmpty ? (caption.split('\\n').first.trim().length > 60 ? caption.split('\\n').first.trim().substring(0, 60) : caption.split('\\n').first.trim()) : title.text.trim(),
+                  'title': title.text.trim().isEmpty ? (caption.split('\n').first.trim().length > 60 ? caption.split('\n').first.trim().substring(0, 60) : caption.split('\n').first.trim()) : title.text.trim(),
                   'category': category,
                   'content': caption,
                   'imageUrl': photoUrl,
