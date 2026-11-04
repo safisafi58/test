@@ -190,7 +190,9 @@ class AdminHome extends StatelessWidget {
               final data = Map<dynamic, dynamic>.from(entry.value as Map);
               final title = (data['title'] ?? 'Untitled').toString();
               final category = (data['category'] ?? 'Video Prompt').toString();
+              final imageUrl = (data['imageUrl'] ?? '').toString();
               return Card(child: ListTile(
+                leading: imageUrl.isEmpty ? const CircleAvatar(child: Icon(Icons.image_outlined)) : ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network(imageUrl, width: 54, height: 54, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const CircleAvatar(child: Icon(Icons.broken_image_outlined)))),
                 title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text('$category${data['isTrending'] == true ? ' • TRENDING' : ''}\n${data['content'] ?? ''}', maxLines: 3, overflow: TextOverflow.ellipsis),
                 isThreeLine: true,
@@ -216,6 +218,7 @@ class AdminHome extends StatelessWidget {
 Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id, Map<dynamic, dynamic>? old}) async {
   final title = TextEditingController(text: (old?['title'] ?? '').toString());
   final content = TextEditingController(text: (old?['content'] ?? '').toString());
+  final imageUrl = TextEditingController(text: (old?['imageUrl'] ?? '').toString());
   String category = promptCategories.contains(old?['category']) ? old!['category'].toString() : promptCategories.first;
   bool trending = old?['isTrending'] == true;
   final formKey = GlobalKey<FormState>();
@@ -231,6 +234,8 @@ Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id
         onChanged: (v) { if (v != null) setDialogState(() => category = v); },
       ),
       SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Mark as Trending'), value: trending, onChanged: (v) => setDialogState(() => trending = v)),
+      TextFormField(controller: imageUrl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Image URL (https://...)', prefixIcon: Icon(Icons.link), border: OutlineInputBorder()), validator: (v) { final value = (v ?? '').trim(); final uri = Uri.tryParse(value); return value.isEmpty || uri == null || !uri.hasScheme || !(uri.scheme == 'https' || uri.scheme == 'http') || uri.host.isEmpty ? 'Enter a valid image URL' : null; }),
+      const SizedBox(height: 12),
       TextFormField(controller: content, minLines: 4, maxLines: 8, decoration: const InputDecoration(labelText: 'Prompt text'), validator: (v) => v == null || v.trim().isEmpty ? 'Enter prompt text' : null),
     ])))),
     actions: [
@@ -241,6 +246,7 @@ Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id
           'title': title.text.trim(),
           'category': category,
           'content': content.text.trim(),
+          'imageUrl': imageUrl.text.trim(),
           'isTrending': trending,
           'createdAt': old?['createdAt'] ?? ServerValue.timestamp,
           'updatedAt': ServerValue.timestamp,
@@ -256,6 +262,7 @@ Future<void> editPrompt(BuildContext context, DatabaseReference ref, {String? id
   )));
   title.dispose();
   content.dispose();
+  imageUrl.dispose();
 }
 
 Future<void> deletePrompt(BuildContext context, DatabaseReference ref, String id) async {
