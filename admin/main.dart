@@ -4,11 +4,11 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 const options = FirebaseOptions(
-  apiKey: 'AIzaSyDJ5MIO3mJDu3mJDuP1-0GQ3xiHMI7XR1htO2Kw',
-  appId: '1:451486689188:android:5e9553bce575e168ef8331',
-  messagingSenderId: '451486689188',
-  projectId: 'pashto-poetry-new-2c4ba',
-  databaseURL: 'https://pashto-poetry-new-2c4ba-default-rtdb.firebaseio.com',
+  apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
+  appId: '1:915531372851:android:0d4b4ae112f12390ce4646',
+  messagingSenderId: '915531372851',
+  projectId: 'romptgo',
+  databaseURL: 'https://romptgo-default-rtdb.firebaseio.com',
 );
 const promptCategories = <String>[
   'Video Prompt', 'Kids', 'DP Maker', 'Game', 'Cinematic', 'Anime & Cartoon',
