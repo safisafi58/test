@@ -221,7 +221,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
         Text('Latest 10', style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
       ])),
       SizedBox(height: 184, child: posts.isEmpty
-        ? Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(width: double.infinity, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(18)), alignment: Alignment.center, child: const Text('New prompts will appear here'))
+        ? Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Container(width: double.infinity, decoration: BoxDecoration(color: Theme.of(context).colorScheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(18)), alignment: Alignment.center, child: const Text('New prompts will appear here')))
         : PageView.builder(
             controller: _latestPageController,
             itemCount: posts.length,
