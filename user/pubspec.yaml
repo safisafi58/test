@@ -25,6 +25,10 @@ flutter:
     - assets/sp1.png
     - assets/caver.JPG
     - assets/admin.JPG
+    - assets/upd.png
+    - assets/upl.png
+    - assets/nol.png
+    - assets/nod.png
 
 flutter_launcher_icons:
   android: true
