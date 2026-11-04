@@ -462,19 +462,23 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
 class OnlineGate extends StatelessWidget {
   const OnlineGate({super.key});
   Future<Map<String,dynamic>?> _requiredUpdate() async {
-    final snap = await FirebaseDatabase.instance.ref('appUpdate').get();
-    if (snap.value is! Map) return null;
-    final data = Map<dynamic,dynamic>.from(snap.value as Map);
-    if (data['forceUpdate'] != true) return null;
-    final info = await PackageInfo.fromPlatform();
-    int compare(String a, String b) {
-      final aa = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-      final bb = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-      for (var i=0;i<3;i++) { final x=i<aa.length?aa[i]:0; final y=i<bb.length?bb[i]:0; if(x!=y) return x.compareTo(y); }
-      return 0;
+    try {
+      final snap = await FirebaseDatabase.instance.ref('appUpdate').get();
+      if (snap.value is! Map) return null;
+      final data = Map<dynamic,dynamic>.from(snap.value as Map);
+      if (data['forceUpdate'] != true) return null;
+      final info = await PackageInfo.fromPlatform();
+      int compare(String a, String b) {
+        final aa = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+        final bb = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+        for (var i=0;i<3;i++) { final x=i<aa.length?aa[i]:0; final y=i<bb.length?bb[i]:0; if(x!=y) return x.compareTo(y); }
+        return 0;
+      }
+      final latest = (data['version'] ?? '1.0.0').toString();
+      return compare(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
+    } catch (_) {
+      return null;
     }
-    final latest = (data['version'] ?? '1.0.0').toString();
-    return compare(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
   }
   @override
   Widget build(BuildContext context) => StreamBuilder<DatabaseEvent>(
