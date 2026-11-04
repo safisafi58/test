@@ -506,7 +506,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
     const Divider(),
     ListTile(leading: const Icon(Icons.person_outline), title: Text(pg('Creator info')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorInfoPage())); }),
-    ListTile(leading: const Icon(Icons.star_outline), title: const Text('Star on GitHub'), subtitle: const Text('Support PromptGo on GitHub'), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://github.com/safisafi58/test'), mode: LaunchMode.externalApplication); }),
+    ListTile(leading: const Icon(Icons.star_outline), title: const Text('Rate on Google Play'), subtitle: const Text('Rate PromptGo on the Play Store'), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://play.google.com/store/apps/details?id=com.promptgo.safi'), mode: LaunchMode.externalApplication); }),
     ListTile(leading: const Icon(Icons.share_outlined), title: Text(pg('Share app')), onTap: () { Navigator.pop(context); Share.share('Try PromptGo — an AI prompt library for creative ideas.'); }),
     ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage())); }),
     ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: const Text('Privacy Policy'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyPage())); }),
