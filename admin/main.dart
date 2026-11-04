@@ -170,10 +170,13 @@ class AdminHome extends StatelessWidget {
       drawer: Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
         UserAccountsDrawerHeader(margin: EdgeInsets.zero, accountName: const Text('Admin Profile', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: Text(FirebaseAuth.instance.currentUser?.email ?? 'Admin account'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30))),
         ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
+        ListTile(leading: const Icon(Icons.manage_accounts_outlined), title: const Text('App information & creator'), subtitle: const Text('Edit creator details and contacts'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())); }),
+        ListTile(leading: const Icon(Icons.system_update_alt), title: const Text('App update'), subtitle: const Text('Publish a required user app update'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage(initialTab: 1))); }),
         const ListTile(leading: Icon(Icons.info_outline), title: Text('PromptGo Admin'), subtitle: Text('Version 1.0.0')),
         ListTile(leading: const Icon(Icons.logout), title: const Text('Sign out'), onTap: () { Navigator.pop(context); FirebaseAuth.instance.signOut(); }),
       ]))),
       appBar: AppBar(title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)), actions: [
+        IconButton(tooltip: 'App settings', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())), icon: const Icon(Icons.settings_suggest_outlined)),
         IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
       ]),
       floatingActionButton: FloatingActionButton.extended(onPressed: () => editPrompt(context, ref), icon: const Icon(Icons.add), label: const Text('New prompt')),
@@ -281,4 +284,132 @@ Future<void> deletePrompt(BuildContext context, DatabaseReference ref, String id
     ],
   ));
   if (confirmed == true) await ref.child(id).remove();
+}
+
+
+class AdminManagementPage extends StatefulWidget {
+  final int initialTab;
+  const AdminManagementPage({super.key, this.initialTab = 0});
+  @override
+  State<AdminManagementPage> createState() => _AdminManagementPageState();
+}
+
+class _AdminManagementPageState extends State<AdminManagementPage> with SingleTickerProviderStateMixin {
+  late final TabController tabs = TabController(length: 2, vsync: this, initialIndex: widget.initialTab);
+  @override
+  void dispose() { tabs.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('App management'), bottom: TabBar(controller: tabs, tabs: const [Tab(icon: Icon(Icons.person_outline), text: 'Creator'), Tab(icon: Icon(Icons.system_update_alt), text: 'App update')])),
+    body: TabBarView(controller: tabs, children: const [CreatorManagementTab(), UpdateManagementTab()]),
+  );
+}
+
+class CreatorManagementTab extends StatelessWidget {
+  const CreatorManagementTab({super.key});
+  @override
+  Widget build(BuildContext context) => StreamBuilder<DatabaseEvent>(
+    stream: FirebaseDatabase.instance.ref('appInfo/creator').onValue,
+    builder: (context, snap) {
+      final raw = snap.data?.snapshot.value;
+      final d = raw is Map ? Map<dynamic,dynamic>.from(raw) : <dynamic,dynamic>{};
+      return ListView(padding: const EdgeInsets.all(18), children: [
+        Card(child: Padding(padding: const EdgeInsets.all(18), child: Column(children: [
+          CircleAvatar(radius: 42, backgroundImage: (d['imageUrl'] ?? '').toString().startsWith('http') ? NetworkImage(d['imageUrl'].toString()) : null, child: (d['imageUrl'] ?? '').toString().isEmpty ? const Icon(Icons.person, size: 42) : null),
+          const SizedBox(height: 12),
+          Text((d['name'] ?? 'Sayed Safi').toString(), style: const TextStyle(fontSize: 22,fontWeight:FontWeight.w900)),
+          const SizedBox(height: 8), Text((d['bio'] ?? 'Add creator description').toString(), textAlign: TextAlign.center),
+          const SizedBox(height: 8), Text((d['email'] ?? '').toString()), Text((d['whatsapp'] ?? '').toString()),
+        ]))),
+        const SizedBox(height: 14),
+        FilledButton.icon(onPressed: () => editCreatorInfo(context,d), icon: const Icon(Icons.edit_outlined), label: const Text('Edit creator information')),
+        const Padding(padding: EdgeInsets.only(top: 14), child: Text('These details appear in the User app About and Creator Info screens.')),
+      ]);
+    },
+  );
+}
+
+Future<void> editCreatorInfo(BuildContext context, Map<dynamic,dynamic> old) async {
+  final name = TextEditingController(text: (old['name'] ?? 'Sayed Safi').toString());
+  final bio = TextEditingController(text: (old['bio'] ?? '').toString());
+  final image = TextEditingController(text: (old['imageUrl'] ?? '').toString());
+  final email = TextEditingController(text: (old['email'] ?? '').toString());
+  final whatsapp = TextEditingController(text: (old['whatsapp'] ?? '').toString());
+  final extra = TextEditingController(text: (old['extraContact'] ?? '').toString());
+  final key = GlobalKey<FormState>();
+  await showDialog<void>(context: context, builder: (ctx) => AlertDialog(
+    title: const Text('Creator information'),
+    content: SizedBox(width: 460, child: SingleChildScrollView(child: Form(key:key, child: Column(mainAxisSize:MainAxisSize.min,children:[
+      TextFormField(controller:name,decoration:const InputDecoration(labelText:'Creator name'),validator:(v)=>v==null||v.trim().isEmpty?'Enter a name':null),
+      TextFormField(controller:bio,minLines:3,maxLines:5,decoration:const InputDecoration(labelText:'Description / Bio')),
+      TextFormField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Profile image URL')),
+      TextFormField(controller:email,keyboardType:TextInputType.emailAddress,decoration:const InputDecoration(labelText:'Email')),
+      TextFormField(controller:whatsapp,keyboardType:TextInputType.phone,decoration:const InputDecoration(labelText:'WhatsApp number')),
+      TextFormField(controller:extra,decoration:const InputDecoration(labelText:'Other contact details')),
+    ])))),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+      FilledButton(onPressed:() async {
+        if(!key.currentState!.validate()) return;
+        try {
+          await FirebaseDatabase.instance.ref('appInfo/creator').set({
+            'name':name.text.trim(),'bio':bio.text.trim(),'imageUrl':image.text.trim(),
+            'email':email.text.trim(),'whatsapp':whatsapp.text.trim(),'extraContact':extra.text.trim(),
+            'updatedAt':ServerValue.timestamp,
+          });
+          if(ctx.mounted) Navigator.pop(ctx);
+          if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Creator information saved.')));
+        } catch(e) { if(ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Save failed: $e'))); }
+      },child:const Text('Save')),
+    ],
+  ));
+  name.dispose();bio.dispose();image.dispose();email.dispose();whatsapp.dispose();extra.dispose();
+}
+
+class UpdateManagementTab extends StatelessWidget {
+  const UpdateManagementTab({super.key});
+  @override
+  Widget build(BuildContext context) => StreamBuilder<DatabaseEvent>(
+    stream: FirebaseDatabase.instance.ref('appUpdate').onValue,
+    builder:(context,snap){
+      final raw=snap.data?.snapshot.value;
+      final d=raw is Map?Map<dynamic,dynamic>.from(raw):<dynamic,dynamic>{};
+      return ListView(padding:const EdgeInsets.all(18),children:[
+        Card(child:ListTile(leading:const Icon(Icons.system_update_alt,size:34),title:Text('Version ${d['version']??'1.0.0'}',style:const TextStyle(fontWeight:FontWeight.w900)),subtitle:Text(d['forceUpdate']==true?'Mandatory update is enabled':'No mandatory update is currently active'))),
+        const SizedBox(height:14),
+        const Text('Publish a new version of the User app. To make it mandatory, enable the switch and provide a direct HTTPS APK link.',style:TextStyle(height:1.5)),
+        const SizedBox(height:14),
+        FilledButton.icon(onPressed:()=>editAppUpdate(context,d),icon:const Icon(Icons.publish),label:const Text('Configure / publish update')),
+      ]);
+    },
+  );
+}
+
+Future<void> editAppUpdate(BuildContext context, Map<dynamic,dynamic> old) async {
+  final version=TextEditingController(text:(old['version']??'1.0.1').toString());
+  final apk=TextEditingController(text:(old['apkUrl']??'').toString());
+  final notes=TextEditingController(text:(old['releaseNotes']??'').toString());
+  bool force=old['forceUpdate']==true;
+  final key=GlobalKey<FormState>();
+  await showDialog<void>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
+    title:const Text('User app update'),
+    content:SizedBox(width:460,child:SingleChildScrollView(child:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[
+      TextFormField(controller:version,decoration:const InputDecoration(labelText:'New app version (e.g. 1.0.2)'),validator:(v)=>v==null||!RegExp(r'^\\d+\\.\\d+\\.\\d+$').hasMatch(v.trim())?'Use format 1.0.2':null),
+      TextFormField(controller:apk,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Direct APK HTTPS URL'),validator:(v)=>v==null||!v.trim().startsWith('https://')?'Enter an HTTPS APK URL':null),
+      TextFormField(controller:notes,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Release notes')),
+      SwitchListTile(contentPadding:EdgeInsets.zero,value:force,onChanged:(v)=>setDialog(()=>force=v),title:const Text('Force update (block old versions)')),
+    ])))),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+      FilledButton(onPressed:() async {
+        if(!key.currentState!.validate()) return;
+        try {
+          await FirebaseDatabase.instance.ref('appUpdate').set({'version':version.text.trim(),'apkUrl':apk.text.trim(),'releaseNotes':notes.text.trim(),'forceUpdate':force,'updatedAt':ServerValue.timestamp});
+          if(ctx.mounted) Navigator.pop(ctx);
+          if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Update settings published.')));
+        } catch(e) { if(ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Publish failed: $e'))); }
+      },child:const Text('Publish')),
+    ],
+  )));
+  version.dispose();apk.dispose();notes.dispose();
 }
