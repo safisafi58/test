@@ -31,8 +31,8 @@ class PromptGoAdmin extends StatelessWidget {
     title: 'PromptGo Admin',
     debugShowCheckedModeBanner: false,
     themeMode: ThemeMode.system,
-    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4))),
-    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark)),
+    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4)), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
+    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark), pageTransitionsTheme: const PageTransitionsTheme(builders: {TargetPlatform.android: ZoomPageTransitionsBuilder(), TargetPlatform.iOS: CupertinoPageTransitionsBuilder(), TargetPlatform.windows: ZoomPageTransitionsBuilder(), TargetPlatform.linux: ZoomPageTransitionsBuilder(), TargetPlatform.macOS: CupertinoPageTransitionsBuilder()})),
     home: const AdminSplash(),
   );
 }
@@ -42,20 +42,26 @@ class AdminSplash extends StatefulWidget {
   @override
   State<AdminSplash> createState() => _AdminSplashState();
 }
-class _AdminSplashState extends State<AdminSplash> {
+class _AdminSplashState extends State<AdminSplash> with SingleTickerProviderStateMixin {
+  late final AnimationController controller = AnimationController(vsync:this,duration:const Duration(milliseconds:1500))..forward();
+  late final Animation<double> scale = CurvedAnimation(parent:controller,curve:Curves.elasticOut);
+  late final Animation<double> fade = CurvedAnimation(parent:controller,curve:Curves.easeIn);
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1100), () {
+    Future.delayed(const Duration(milliseconds: 1800), () {
       if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminGate()));
     });
   }
   @override
-  Widget build(BuildContext context) => const Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Icon(Icons.auto_awesome_rounded, size: 72), SizedBox(height: 12),
-    Text('PromptGo Admin', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
-    SizedBox(height: 20), CircularProgressIndicator(),
-  ])));
+  void dispose(){controller.dispose();super.dispose();}
+  @override
+  Widget build(BuildContext context) => Scaffold(body: Center(child: FadeTransition(opacity:fade,child:ScaleTransition(scale:scale,child:Column(mainAxisSize:MainAxisSize.min,children:[
+    Container(padding:const EdgeInsets.all(20),decoration:BoxDecoration(shape:BoxShape.circle,color:Theme.of(context).colorScheme.primaryContainer,boxShadow:[BoxShadow(color:Theme.of(context).colorScheme.primary.withValues(alpha:.25),blurRadius:30,spreadRadius:4)]),child:Icon(Icons.auto_awesome_rounded,size:76,color:Theme.of(context).colorScheme.primary)),
+    const SizedBox(height:18),
+    const Text('PromptGo Admin',style:TextStyle(fontSize:28,fontWeight:FontWeight.w900)),
+    const SizedBox(height:22),const SizedBox(width:26,height:26,child:CircularProgressIndicator(strokeWidth:2.5)),
+  ])))));
 }
 
 class AdminGate extends StatelessWidget {
