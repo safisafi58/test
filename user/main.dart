@@ -54,6 +54,25 @@ String pgGuide() {
   return guide[promptGoLanguage.value] ?? guide['English']!;
 }
 
+String pgContact(String key) {
+  const labels = <String,Map<String,String>>{
+    'Pashto': {'Email':'برېښنالیک','WhatsApp':'واټس‌اپ','Other contact':'نورې اړیکې','Privacy Policy':'د محرمیت تګلاره'},
+    'Persian': {'Email':'ایمیل','WhatsApp':'واتساپ','Other contact':'راه ارتباطی دیگر','Privacy Policy':'سیاست حفظ حریم خصوصی'},
+    'Dari': {'Email':'ایمیل','WhatsApp':'واتساپ','Other contact':'راه تماس دیگر','Privacy Policy':'پالیسی محرمیت'},
+    'Urdu': {'Email':'ای میل','WhatsApp':'واٹس ایپ','Other contact':'دیگر رابطہ','Privacy Policy':'رازداری کی پالیسی'},
+    'Arabic': {'Email':'البريد الإلكتروني','WhatsApp':'واتساب','Other contact':'وسيلة اتصال أخرى','Privacy Policy':'سياسة الخصوصية'},
+    'English': {'Email':'Email','WhatsApp':'WhatsApp','Other contact':'Other contact','Privacy Policy':'Privacy Policy'},
+    'German': {'Email':'E-Mail','WhatsApp':'WhatsApp','Other contact':'Weitere Kontaktmöglichkeit','Privacy Policy':'Datenschutzrichtlinie'},
+    'French': {'Email':'E-mail','WhatsApp':'WhatsApp','Other contact':'Autre contact','Privacy Policy':'Politique de confidentialité'},
+    'Spanish': {'Email':'Correo electrónico','WhatsApp':'WhatsApp','Other contact':'Otro contacto','Privacy Policy':'Política de privacidad'},
+    'Turkish': {'Email':'E-posta','WhatsApp':'WhatsApp','Other contact':'Diğer iletişim','Privacy Policy':'Gizlilik politikası'},
+    'Chinese': {'Email':'电子邮件','WhatsApp':'WhatsApp','Other contact':'其他联系方式','Privacy Policy':'隐私政策'},
+    'Hindi': {'Email':'ईमेल','WhatsApp':'व्हाट्सऐप','Other contact':'अन्य संपर्क','Privacy Policy':'गोपनीयता नीति'},
+    'Bengali': {'Email':'ইমেইল','WhatsApp':'হোয়াটসঅ্যাপ','Other contact':'অন্যান্য যোগাযোগ','Privacy Policy':'গোপনীয়তা নীতি'},
+  };
+  return labels[promptGoLanguage.value]?[key] ?? key;
+}
+
 
 const firebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
@@ -332,7 +351,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
     UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 42, height: 42, fit: BoxFit.contain)))),
     ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
-    ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); _showThemePicker(context); }),
+    ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
     const Divider(),
     ListTile(leading: const Icon(Icons.person_outline), title: Text(pg('Creator info')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorInfoPage())); }),
@@ -383,7 +402,7 @@ class AboutPromptGoPage extends StatelessWidget {
       return Card(child: ListTile(leading: const Icon(Icons.person_outline), title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text((d['bio'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis)));
     }),
     const SizedBox(height: 12),
-    const Text('Privacy Policy', style: TextStyle(fontWeight: FontWeight.w800)),
+    Text(pgContact('Privacy Policy'), style: const TextStyle(fontWeight: FontWeight.w800)),
     const Text('PromptGo uses Firebase to display online prompts and app information. It does not provide offline access. Notifications are optional and can be disabled in Android settings.'),
     const SizedBox(height: 14), const Text('Version 1.0.0 • Ideas into action', style: TextStyle(fontWeight: FontWeight.w700)),
   ]));
@@ -408,9 +427,9 @@ class CreatorInfoPage extends StatelessWidget {
         Center(child: Text(name, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w900))),
         const SizedBox(height: 14), Text(bio),
         const SizedBox(height: 24),
-        if (email.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: const Text('Email'), subtitle: Text(email), onTap: () => launchUrl(Uri.parse('mailto:$email')))),
-        if (whatsapp.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: const Text('WhatsApp'), subtitle: Text(whatsapp), onTap: () => launchUrl(Uri.parse('https://wa.me/${whatsapp.replaceAll(RegExp(r'[^0-9]'), '')}'), mode: LaunchMode.externalApplication))),
-        if (extra.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.contact_phone_outlined), title: const Text('Other contact'), subtitle: Text(extra))),
+        if (email.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: Text(pgContact('Email')), subtitle: Text(email), onTap: () => launchUrl(Uri.parse('mailto:$email')))),
+        if (whatsapp.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: Text(pgContact('WhatsApp')), subtitle: Text(whatsapp), onTap: () => launchUrl(Uri.parse('https://wa.me/${whatsapp.replaceAll(RegExp(r'[^0-9]'), '')}'), mode: LaunchMode.externalApplication))),
+        if (extra.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.contact_phone_outlined), title: Text(pgContact('Other contact')), subtitle: Text(extra))),
       ]);
     },
   ));
@@ -536,7 +555,7 @@ class SettingsPage extends StatelessWidget {
         GestureDetector(onTap: () async { promptGoAccent.value=c; final p=await SharedPreferences.getInstance(); await p.setInt('promptgo_accent',c.value); }, child: CircleAvatar(radius: 23, backgroundColor:c, child: promptGoAccent.value.value==c.value?const Icon(Icons.check,color:Colors.white):null)),
     ]),
     const SizedBox(height: 24),
-    ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: const Text('Privacy Policy'), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const PrivacyPolicyPage()))),
+    ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: Text(pgContact('Privacy Policy')), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const PrivacyPolicyPage()))),
     ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const AboutPromptGoPage()))),
   ]));
 }
