@@ -14,6 +14,11 @@ final ValueNotifier<ThemeMode> promptGoThemeMode = ValueNotifier<ThemeMode>(Them
 final ValueNotifier<Color> promptGoAccent = ValueNotifier<Color>(const Color(0xff6750a4));
 
 final ValueNotifier<String> promptGoLanguage = ValueNotifier<String>('English');
+
+Widget promptGoLogo(BuildContext context, {double size = 48}) => Image.asset(
+  Theme.of(context).brightness == Brightness.dark ? 'assets/sp1.png' : 'assets/sp.png',
+  width: size, height: size, fit: BoxFit.contain,
+);
 const promptGoLanguages = <String>['Pashto','Persian','Dari','Urdu','Arabic','English','German','French','Spanish','Turkish','Chinese','Hindi','Bengali'];
 bool get promptGoIsRtl => const ['Pashto','Persian','Dari','Urdu','Arabic'].contains(promptGoLanguage.value);
 int comparePromptGoVersions(String a, String b) {
@@ -163,7 +168,7 @@ class _PromptGoSplashState extends State<PromptGoSplash> with SingleTickerProvid
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(body: Center(child: AnimatedBuilder(animation: _controller, builder: (context, _) => FadeTransition(opacity: _fade, child: ScaleTransition(scale: _scale, child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primaryContainer, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 35, spreadRadius: 5)]), child: ColorFiltered(colorFilter: ColorFilter.mode(dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 138, height: 138, fit: BoxFit.contain))),
+      Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primaryContainer, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 35, spreadRadius: 5)]), child: promptGoLogo(context, size: 138)),
       const SizedBox(height: 22),
       const Text('PromptGo', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: .5)),
       const SizedBox(height: 7),
@@ -252,7 +257,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
     }, child: Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: Row(children: [ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 30, height: 30, fit: BoxFit.contain)), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
+        title: Row(children: [promptGoLogo(context, size: 30), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
         actions: [
           IconButton(tooltip: 'Favorites', onPressed: () => setState(() => showFavoritesOnly = !showFavoritesOnly), icon: Icon(showFavoritesOnly ? Icons.favorite : Icons.favorite_border)),
         ],
@@ -392,7 +397,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   }
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
-    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 42, height: 42, fit: BoxFit.contain)))),
+    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: promptGoLogo(context, size: 42))),
     ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
@@ -428,7 +433,7 @@ class AboutPromptGoPage extends StatelessWidget {
   const AboutPromptGoPage({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('About'))), body: ListView(padding: const EdgeInsets.all(20), children: [
-    Center(child: ColorFiltered(colorFilter: ColorFilter.mode(Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.transparent, BlendMode.difference), child: Image.asset('assets/sp.png', width: 76, height: 76))),
+    Center(child: promptGoLogo(context, size: 76)),
     const SizedBox(height: 10),
     const Center(child: Text('PromptGo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900))),
     const SizedBox(height: 20),
