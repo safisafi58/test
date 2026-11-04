@@ -10,6 +10,29 @@ import 'package:url_launcher/url_launcher.dart';
 
 final ValueNotifier<ThemeMode> promptGoThemeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
 
+final ValueNotifier<String> promptGoLanguage = ValueNotifier<String>('English');
+const promptGoLanguages = <String>['Pashto','Persian','Dari','Urdu','Arabic','English','German','French','Spanish','Turkish','Chinese','Hindi','Bengali'];
+bool get promptGoIsRtl => const ['Pashto','Persian','Dari','Urdu','Arabic'].contains(promptGoLanguage.value);
+String pg(String key) {
+  const values = <String, Map<String, String>>{
+    'Pashto': {'Settings':'تنظیمات','Theme and app preferences':'د اپلیکیشن بڼه او تنظیمات','Appearance':'بڼه','Favorites':'خوښې شوې','Rate app':'اپلیکیشن ته درجه ورکړئ','Share app':'اپلیکیشن شریک کړئ','About':'د اپلیکیشن په اړه','Creator info':'د جوړوونکي معلومات','Exit':'وتل','Language':'ژبه','Choose language':'ژبه وټاکئ','Choose appearance':'د اپلیکیشن بڼه وټاکئ','Automatic':'اتومات','Light':'روښانه','Dark':'تیاره','App guide':'د اپلیکیشن لارښود','Copy prompt':'پرامپټ کاپي کړئ'},
+    'Persian': {'Settings':'تنظیمات','Theme and app preferences':'ظاهر و تنظیمات برنامه','Appearance':'ظاهر','Favorites':'علاقه‌مندی‌ها','Rate app':'امتیاز به برنامه','Share app':'اشتراک‌گذاری برنامه','About':'درباره برنامه','Creator info':'اطلاعات سازنده','Exit':'خروج','Language':'زبان','Choose language':'انتخاب زبان','Choose appearance':'انتخاب ظاهر','Automatic':'خودکار','Light':'روشن','Dark':'تیره','App guide':'راهنمای برنامه','Copy prompt':'کپی پرامپت'},
+    'Dari': {'Settings':'تنظیمات','Theme and app preferences':'ظاهر و تنظیمات برنامه','Appearance':'ظاهر','Favorites':'علاقه‌مندی‌ها','Rate app':'امتیاز به برنامه','Share app':'شریک‌سازی برنامه','About':'درباره برنامه','Creator info':'معلومات سازنده','Exit':'خروج','Language':'زبان','Choose language':'انتخاب زبان','Choose appearance':'انتخاب ظاهر','Automatic':'خودکار','Light':'روشن','Dark':'تیره','App guide':'راهنمای برنامه','Copy prompt':'کاپی پرامپت'},
+    'Urdu': {'Settings':'ترتیبات','Theme and app preferences':'ایپ کی شکل اور ترتیبات','Appearance':'ظاہری شکل','Favorites':'پسندیدہ','Rate app':'ایپ کو ریٹ کریں','Share app':'ایپ شیئر کریں','About':'ایپ کے بارے میں','Creator info':'تخلیق کار کی معلومات','Exit':'باہر نکلیں','Language':'زبان','Choose language':'زبان منتخب کریں','Choose appearance':'ظاہری شکل منتخب کریں','Automatic':'خودکار','Light':'روشن','Dark':'گہرا','App guide':'ایپ گائیڈ','Copy prompt':'پرامپٹ کاپی کریں'},
+    'Arabic': {'Settings':'الإعدادات','Theme and app preferences':'المظهر وتفضيلات التطبيق','Appearance':'المظهر','Favorites':'المفضلة','Rate app':'قيّم التطبيق','Share app':'مشاركة التطبيق','About':'حول التطبيق','Creator info':'معلومات المنشئ','Exit':'خروج','Language':'اللغة','Choose language':'اختر اللغة','Choose appearance':'اختر المظهر','Automatic':'تلقائي','Light':'فاتح','Dark':'داكن','App guide':'دليل التطبيق','Copy prompt':'نسخ النص'},
+    'English': {'Settings':'Settings','Theme and app preferences':'Theme and app preferences','Appearance':'Appearance','Favorites':'Favorites','Rate app':'Rate app','Share app':'Share app','About':'About','Creator info':'Creator info','Exit':'Exit','Language':'Language','Choose language':'Choose language','Choose appearance':'Choose appearance','Automatic':'Automatic','Light':'Light','Dark':'Dark','App guide':'How to use PromptGo','Copy prompt':'Copy prompt'},
+    'German': {'Settings':'Einstellungen','Theme and app preferences':'Design und App-Einstellungen','Appearance':'Darstellung','Favorites':'Favoriten','Rate app':'App bewerten','Share app':'App teilen','About':'Über','Creator info':'Informationen zum Ersteller','Exit':'Beenden','Language':'Sprache','Choose language':'Sprache wählen','Choose appearance':'Darstellung wählen','Automatic':'Automatisch','Light':'Hell','Dark':'Dunkel','App guide':'App-Anleitung','Copy prompt':'Prompt kopieren'},
+    'French': {'Settings':'Paramètres','Theme and app preferences':'Thème et préférences','Appearance':'Apparence','Favorites':'Favoris','Rate app':'Noter l’application','Share app':'Partager l’application','About':'À propos','Creator info':'Informations du créateur','Exit':'Quitter','Language':'Langue','Choose language':'Choisir la langue','Choose appearance':'Choisir l’apparence','Automatic':'Automatique','Light':'Clair','Dark':'Sombre','App guide':'Guide de l’application','Copy prompt':'Copier le prompt'},
+    'Spanish': {'Settings':'Ajustes','Theme and app preferences':'Tema y preferencias','Appearance':'Apariencia','Favorites':'Favoritos','Rate app':'Calificar la app','Share app':'Compartir app','About':'Acerca de','Creator info':'Información del creador','Exit':'Salir','Language':'Idioma','Choose language':'Elegir idioma','Choose appearance':'Elegir apariencia','Automatic':'Automático','Light':'Claro','Dark':'Oscuro','App guide':'Guía de la app','Copy prompt':'Copiar prompt'},
+    'Turkish': {'Settings':'Ayarlar','Theme and app preferences':'Tema ve uygulama tercihleri','Appearance':'Görünüm','Favorites':'Favoriler','Rate app':'Uygulamayı değerlendir','Share app':'Uygulamayı paylaş','About':'Hakkında','Creator info':'Oluşturucu bilgisi','Exit':'Çıkış','Language':'Dil','Choose language':'Dil seçin','Choose appearance':'Görünüm seçin','Automatic':'Otomatik','Light':'Açık','Dark':'Koyu','App guide':'Uygulama rehberi','Copy prompt':'Promptu kopyala'},
+    'Chinese': {'Settings':'设置','Theme and app preferences':'主题和应用偏好','Appearance':'外观','Favorites':'收藏','Rate app':'评价应用','Share app':'分享应用','About':'关于','Creator info':'创作者信息','Exit':'退出','Language':'语言','Choose language':'选择语言','Choose appearance':'选择外观','Automatic':'自动','Light':'浅色','Dark':'深色','App guide':'使用指南','Copy prompt':'复制提示词'},
+    'Hindi': {'Settings':'सेटिंग्स','Theme and app preferences':'थीम और ऐप प्राथमिकताएँ','Appearance':'दिखावट','Favorites':'पसंदीदा','Rate app':'ऐप को रेट करें','Share app':'ऐप साझा करें','About':'ऐप के बारे में','Creator info':'निर्माता की जानकारी','Exit':'बाहर निकलें','Language':'भाषा','Choose language':'भाषा चुनें','Choose appearance':'दिखावट चुनें','Automatic':'स्वचालित','Light':'हल्का','Dark':'गहरा','App guide':'ऐप उपयोग गाइड','Copy prompt':'प्रॉम्प्ट कॉपी करें'},
+    'Bengali': {'Settings':'সেটিংস','Theme and app preferences':'থিম ও অ্যাপ পছন্দ','Appearance':'চেহারা','Favorites':'পছন্দের','Rate app':'অ্যাপ রেট করুন','Share app':'অ্যাপ শেয়ার করুন','About':'অ্যাপ সম্পর্কে','Creator info':'নির্মাতার তথ্য','Exit':'বের হন','Language':'ভাষা','Choose language':'ভাষা নির্বাচন করুন','Choose appearance':'চেহারা নির্বাচন করুন','Automatic':'স্বয়ংক্রিয়','Light':'হালকা','Dark':'গাঢ়','App guide':'অ্যাপ ব্যবহারের নির্দেশিকা','Copy prompt':'প্রম্পট কপি করুন'},
+  };
+  return values[promptGoLanguage.value]?[key] ?? values['English']![key] ?? key;
+}
+
+
 const firebaseOptions = FirebaseOptions(
   apiKey: 'AIzaSyBbLn0_NN2gghyaZpy2FPBCjUYz8LGUkgc',
   appId: '1:915531372851:android:7198fe96a0cf0c7bce4646',
@@ -27,6 +50,7 @@ Future<void> main() async {
   await Firebase.initializeApp(options: firebaseOptions);
   final prefs = await SharedPreferences.getInstance();
   final savedTheme = prefs.getString('promptgo_theme') ?? 'system';
+  promptGoLanguage.value = prefs.getString('promptgo_language') ?? 'English';
   promptGoThemeMode.value = savedTheme == 'dark' ? ThemeMode.dark : savedTheme == 'light' ? ThemeMode.light : ThemeMode.system;
   runApp(const PromptGoUser());
 }
@@ -34,12 +58,13 @@ Future<void> main() async {
 class PromptGoUser extends StatelessWidget {
   const PromptGoUser({super.key});
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(valueListenable: promptGoThemeMode, builder: (context, mode, _) => MaterialApp(
+  Widget build(BuildContext context) => AnimatedBuilder(animation: Listenable.merge([promptGoThemeMode, promptGoLanguage]), builder: (context, _) => MaterialApp(
     title: 'PromptGo',
     debugShowCheckedModeBanner: false,
     themeMode: mode,
     theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4)), scaffoldBackgroundColor: const Color(0xfff7f7fa)),
     darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014)),
+    builder: (context, child) => Directionality(textDirection: promptGoIsRtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
     home: const PromptGoSplash(),
   ));
 }
@@ -254,28 +279,63 @@ class _PromptLibraryState extends State<PromptLibrary> {
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
     UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.auto_awesome, size: 30))),
-    ListTile(leading: const Icon(Icons.settings_outlined), title: const Text('Settings'), subtitle: const Text('Theme and app preferences'), onTap: () { Navigator.pop(context); _showSettings(context); }),
-    ListTile(leading: const Icon(Icons.palette_outlined), title: const Text('Appearance'), subtitle: const Text('Light • Dark • System'), onTap: () { Navigator.pop(context); _showThemePicker(context); }),
-    ListTile(leading: const Icon(Icons.favorite_outline), title: const Text('Favorites'), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
+    ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); _showSettings(context); }),
+    ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); _showThemePicker(context); }),
+    ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
     const Divider(),
-    ListTile(leading: const Icon(Icons.admin_panel_settings_outlined), title: const Text('Admin profile'), subtitle: const Text('PromptGo administration'), onTap: () { Navigator.pop(context); showAboutDialog(context: context, applicationName: 'PromptGo Admin', applicationVersion: '1.0.0', children: const [Text('Manage prompts in the separate PromptGo Admin app.')]); }),
-    ListTile(leading: const Icon(Icons.star_outline), title: const Text('Rate app'), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://play.google.com/store/search?q=PromptGo&c=apps'), mode: LaunchMode.externalApplication); }),
-    ListTile(leading: const Icon(Icons.share_outlined), title: const Text('Share app'), onTap: () { Navigator.pop(context); Share.share('Try PromptGo — an AI prompt library for creative ideas.'); }),
-    ListTile(leading: const Icon(Icons.info_outline), title: const Text('About'), onTap: () { Navigator.pop(context); showAboutDialog(context: context, applicationName: 'PromptGo', applicationVersion: '1.0.0', applicationLegalese: 'Ideas into action'); }),
+    ListTile(leading: const Icon(Icons.person_outline), title: Text(pg('Creator info')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorInfoPage())); }),
+    ListTile(leading: const Icon(Icons.star_outline), title: Text(pg('Rate app')), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://play.google.com/store/search?q=PromptGo&c=apps'), mode: LaunchMode.externalApplication); }),
+    ListTile(leading: const Icon(Icons.share_outlined), title: Text(pg('Share app')), onTap: () { Navigator.pop(context); Share.share('Try PromptGo — an AI prompt library for creative ideas.'); }),
+    ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage())); }),
+    const Divider(),
+    ListTile(leading: const Icon(Icons.exit_to_app), title: Text(pg('Exit')), onTap: () { Navigator.pop(context); SystemNavigator.pop(); }),
   ])));
 
   void _showSettings(BuildContext context) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (ctx) => SafeArea(child: ListView(shrinkWrap: true, children: [
-    const ListTile(title: Text('Settings', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
-    ListTile(leading: const Icon(Icons.brightness_6_outlined), title: const Text('Appearance'), subtitle: const Text('Choose light, dark or automatic theme'), onTap: () { Navigator.pop(ctx); _showThemePicker(context); }),
-    const ListTile(leading: Icon(Icons.info_outline), title: Text('App information'), subtitle: Text('PromptGo • Version 1.0.0')),
+    ListTile(title: Text(pg('Settings'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900))),
+    ListTile(leading: const Icon(Icons.language), title: Text(pg('Language')), subtitle: Text(promptGoLanguage.value), onTap: () { Navigator.pop(ctx); _showLanguagePicker(context); }),
+    ListTile(leading: const Icon(Icons.brightness_6_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Choose appearance')), onTap: () { Navigator.pop(ctx); _showThemePicker(context); }),
+    ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), subtitle: const Text('PromptGo • Version 1.0.0'), onTap: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage())); }),
   ])));
 
+  void _showLanguagePicker(BuildContext context) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (ctx) => SafeArea(child: ListView(shrinkWrap: true, children: [ListTile(title: Text(pg('Choose language'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900))), for (final language in promptGoLanguages) RadioListTile<String>(value: language, groupValue: promptGoLanguage.value, title: Text(language), onChanged: (value) async { if (value != null) { promptGoLanguage.value = value; final prefs = await SharedPreferences.getInstance(); await prefs.setString('promptgo_language', value); if (ctx.mounted) Navigator.pop(ctx); } })])));
+
   void _showThemePicker(BuildContext context) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (ctx) => SafeArea(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    const Padding(padding: EdgeInsets.all(16), child: Text('Choose appearance', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900))),
-    for (final item in <MapEntry<ThemeMode, String>>[const MapEntry(ThemeMode.system, 'Automatic'), const MapEntry(ThemeMode.light, 'Light'), const MapEntry(ThemeMode.dark, 'Dark')])
+    Padding(padding: const EdgeInsets.all(16), child: Text(pg('Choose appearance'), style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900))),
+    for (final item in <MapEntry<ThemeMode, String>>[MapEntry(ThemeMode.system, pg('Automatic')), MapEntry(ThemeMode.light, pg('Light')), MapEntry(ThemeMode.dark, pg('Dark'))])
       RadioListTile<ThemeMode>(value: item.key, groupValue: promptGoThemeMode.value, title: Text(item.value), onChanged: (value) { if (value != null) { promptGoThemeMode.value = value; SharedPreferences.getInstance().then((prefs) => prefs.setString('promptgo_theme', value.name)); Navigator.pop(ctx); } }),
     const SizedBox(height: 12),
   ])));
+}
+
+
+class AboutPromptGoPage extends StatelessWidget {
+  const AboutPromptGoPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('About'))), body: ListView(padding: const EdgeInsets.all(20), children: [
+    const Icon(Icons.auto_awesome_rounded, size: 64),
+    const SizedBox(height: 12),
+    const Center(child: Text('PromptGo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900))),
+    const SizedBox(height: 20),
+    Text(pg('App guide'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
+    const SizedBox(height: 12),
+    const Text('1. Browse prompt cards on the Home screen.\n\n2. Use search or category filters to find prompts.\n\n3. Tap a card to open its details and view the image.\n\n4. Wait until the prompt text finishes appearing; the Copy button becomes active when ready.\n\n5. Tap Copy prompt, then paste it into your favorite AI app.\n\n6. Tap the heart icon to save prompts to Favorites.\n\n7. Open Settings to change language or choose Light, Dark, or Automatic appearance.\n\nPromptGo needs an internet connection to load online prompts.'),
+    const SizedBox(height: 16), const Text('Version 1.0.0 • Ideas into action', style: TextStyle(fontWeight: FontWeight.w700)),
+  ]));
+}
+class CreatorInfoPage extends StatelessWidget {
+  const CreatorInfoPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('Creator info'))), body: ListView(padding: const EdgeInsets.all(22), children: [
+    Center(child: ClipRRect(borderRadius: BorderRadius.circular(100), child: Image.asset('assets/admin.JPG', width: 150, height: 150, fit: BoxFit.cover))),
+    const SizedBox(height: 18),
+    const Center(child: Text('Sayed Safi', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900))),
+    const SizedBox(height: 14),
+    const Text('Sayed Safi is the creator of PromptGo. He works to make creative ideas and useful AI prompts easier to discover, organize, and use. PromptGo helps people find inspiration, explore visual styles, and copy ready-to-use prompts with ease.'),
+    const SizedBox(height: 24),
+    Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: const Text('Email'), subtitle: const Text('noorrahmansayede07@gmail.com'), onTap: () => launchUrl(Uri.parse('mailto:noorrahmansayede07@gmail.com')))),
+    Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: const Text('WhatsApp'), subtitle: const Text('+93744864493'), onTap: () => launchUrl(Uri.parse('https://wa.me/93744864493'), mode: LaunchMode.externalApplication))),
+  ]));
 }
 
 class PromptDetailPage extends StatefulWidget {
