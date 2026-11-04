@@ -35,9 +35,10 @@ jobs:
         run: |
           cp user/main.dart user_app/lib/main.dart
           cp user/pubspec.yaml user_app/pubspec.yaml
+          cp -r user/assets user_app/assets
       - name: Build PromptGo User
         working-directory: user_app
-        run: flutter pub get && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
+        run: flutter pub get && dart run flutter_launcher_icons && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
       - name: Package PromptGo APKs
         run: |
           mkdir -p output
