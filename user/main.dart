@@ -613,19 +613,61 @@ class OnlineGate extends StatelessWidget {
 }
 
 class ForceUpdatePage extends StatelessWidget {
-  final Map<String,dynamic> update;
+  final Map<String, dynamic> update;
+
   const ForceUpdatePage({super.key, required this.update});
+
   @override
   Widget build(BuildContext context) {
     final url = (update['apkUrl'] ?? '').toString();
-    return PopScope(canPop: false, child: Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
-      const Icon(Icons.system_update_alt_rounded, size: 76), const SizedBox(height: 18),
-      const Text('Update required', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
-      const SizedBox(height: 10), Text('Version ${update['version'] ?? ''} is required to continue.', textAlign: TextAlign.center),
-      if ((update['releaseNotes'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 12), child: Text(update['releaseNotes'].toString(), textAlign: TextAlign.center)),
-      const SizedBox(height: 24),
-      SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: url.startsWith('https://') ? () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) : null, icon: const Icon(Icons.download_rounded), label: const Text('Download update'))),
-    ]))));
+    final version = (update['version'] ?? '').toString();
+    final releaseNotes = (update['releaseNotes'] ?? '').toString();
+
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.system_update_alt_rounded, size: 76),
+                const SizedBox(height: 18),
+                const Text(
+                  'Update required',
+                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Version $version is required to continue.',
+                  textAlign: TextAlign.center,
+                ),
+                if (releaseNotes.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(releaseNotes, textAlign: TextAlign.center),
+                  ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: url.startsWith('https://')
+                        ? () => launchUrl(
+                              Uri.parse(url),
+                              mode: LaunchMode.externalApplication,
+                            )
+                        : null,
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('Download update'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
