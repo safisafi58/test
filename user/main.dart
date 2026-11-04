@@ -16,6 +16,12 @@ final ValueNotifier<Color> promptGoAccent = ValueNotifier<Color>(const Color(0xf
 final ValueNotifier<String> promptGoLanguage = ValueNotifier<String>('English');
 const promptGoLanguages = <String>['Pashto','Persian','Dari','Urdu','Arabic','English','German','French','Spanish','Turkish','Chinese','Hindi','Bengali'];
 bool get promptGoIsRtl => const ['Pashto','Persian','Dari','Urdu','Arabic'].contains(promptGoLanguage.value);
+int comparePromptGoVersions(String a, String b) {
+  final aa = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+  final bb = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+  for (var i = 0; i < 3; i++) { final x = i < aa.length ? aa[i] : 0; final y = i < bb.length ? bb[i] : 0; if (x != y) return x.compareTo(y); }
+  return 0;
+}
 String pg(String key) {
   const values = <String, Map<String, String>>{
     'Pashto': {'Settings':'تنظیمات','Theme and app preferences':'د اپلیکیشن بڼه او تنظیمات','Appearance':'بڼه','Favorites':'خوښې شوې','Rate app':'اپلیکیشن ته درجه ورکړئ','Share app':'اپلیکیشن شریک کړئ','About':'د اپلیکیشن په اړه','Creator info':'د جوړوونکي معلومات','Exit':'وتل','Language':'ژبه','Choose language':'ژبه وټاکئ','Choose appearance':'د اپلیکیشن بڼه وټاکئ','Automatic':'اتومات','Light':'روښانه','Dark':'تیاره','App guide':'د اپلیکیشن لارښود','Copy prompt':'پرامپټ کاپي کړئ'},
@@ -179,6 +185,8 @@ class _PromptLibraryState extends State<PromptLibrary> {
   List<Map<String, dynamic>> _latestSliderPosts = [];
   final Set<String> favoriteIds = <String>{};
   StreamSubscription<RemoteMessage>? _foregroundMessages;
+  StreamSubscription<DatabaseEvent>? _updateSubscription;
+  bool _updateScreenShown = false;
   String selectedCategory = 'All';
   bool showFavoritesOnly = false;
   int _itemsToShow = 10;
@@ -187,6 +195,20 @@ class _PromptLibraryState extends State<PromptLibrary> {
   void initState() {
     super.initState();
     _loadFavorites();
+    _updateSubscription = FirebaseDatabase.instance.ref('appUpdate').onValue.listen((event) async {
+      if (_updateScreenShown || !mounted || event.snapshot.value is! Map) return;
+      final raw = Map<dynamic,dynamic>.from(event.snapshot.value as Map);
+      if (raw['forceUpdate'] != true) return;
+      try {
+        final info = await PackageInfo.fromPlatform();
+        final latest = (raw['version'] ?? '1.0.0').toString();
+        if (mounted && comparePromptGoVersions(info.version, latest) < 0 && !_updateScreenShown) {
+          _updateScreenShown = true;
+          final update = raw.map((k,v) => MapEntry(k.toString(),v));
+          Navigator.of(context).pushAndRemoveUntil(MaterialPageRoute(builder: (_) => ForceUpdatePage(update: update)), (route) => false);
+        }
+      } catch (_) {}
+    });
     _foregroundMessages = FirebaseMessaging.onMessage.listen((message) {
       if (!mounted) return;
       final title = message.notification?.title ?? 'New PromptGo post';
@@ -213,6 +235,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   void dispose() {
     _latestSlideTimer?.cancel();
     _foregroundMessages?.cancel();
+    _updateSubscription?.cancel();
     _latestPageController.dispose();
     searchController.dispose();
     super.dispose();
@@ -506,14 +529,8 @@ class OnlineGate extends StatelessWidget {
       final data = Map<dynamic,dynamic>.from(snap.value as Map);
       if (data['forceUpdate'] != true) return null;
       final info = await PackageInfo.fromPlatform();
-      int compare(String a, String b) {
-        final aa = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-        final bb = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
-        for (var i=0;i<3;i++) { final x=i<aa.length?aa[i]:0; final y=i<bb.length?bb[i]:0; if(x!=y) return x.compareTo(y); }
-        return 0;
-      }
       final latest = (data['version'] ?? '1.0.0').toString();
-      return compare(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
+      return comparePromptGoVersions(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
     } catch (_) {
       return null;
     }
