@@ -529,37 +529,87 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
 
 class OnlineGate extends StatelessWidget {
   const OnlineGate({super.key});
-  Future<Map<String,dynamic>?> _requiredUpdate() async {
+
+  Future<Map<String, dynamic>?> _requiredUpdate() async {
     try {
-      final snap = await FirebaseDatabase.instance.ref('appUpdate').get();
-      if (snap.value is! Map) return null;
-      final data = Map<dynamic,dynamic>.from(snap.value as Map);
+      final snapshot = await FirebaseDatabase.instance.ref('appUpdate').get();
+      if (snapshot.value is! Map) return null;
+
+      final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
       if (data['forceUpdate'] != true) return null;
-      final info = await PackageInfo.fromPlatform();
-      final latest = (data['version'] ?? '1.0.0').toString();
-      return comparePromptGoVersions(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
+
+      final packageInfo = await PackageInfo.fromPlatform();
+      final latestVersion = (data['version'] ?? '1.0.0').toString();
+      if (comparePromptGoVersions(packageInfo.version, latestVersion) >= 0) {
+        return null;
+      }
+
+      return data.map((key, value) => MapEntry(key.toString(), value));
     } catch (_) {
       return null;
     }
   }
+
   @override
-  Widget build(BuildContext context) => StreamBuilder<DatabaseEvent>(
-    stream: FirebaseDatabase.instance.ref('.info/connected').onValue,
-    builder: (context, connection) {
-      if (connection.data?.snapshot.value != true) return Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const Icon(Icons.wifi_off_rounded, size: 64), const SizedBox(height: 16),
-        const Text('Internet connection required', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
-        const SizedBox(height: 8), const Text('PromptGo works online only. Connect to the internet and try again.', textAlign: TextAlign.center),
-        const SizedBox(height: 20), const CircularProgressIndicator(),
-      ]))));
-      return FutureBuilder<Map<String,dynamic>?>(future: _requiredUpdate(), builder: (context, update) {
-        if (update.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        if (update.hasError) return const Scaffold(body: Center(child: Text('Could not check app version. Please reconnect.')));
-        if (update.data != null) return ForceUpdatePage(update: update.data!);
-        return const PromptLibrary();
-      });
-    },
-  );
+  Widget build(BuildContext context) {
+    return StreamBuilder<DatabaseEvent>(
+      stream: FirebaseDatabase.instance.ref('.info/connected').onValue,
+      builder: (context, connection) {
+        final isConnected = connection.data?.snapshot.value == true;
+        if (!isConnected) {
+          return const Scaffold(
+            body: Center(
+              child: Padding(
+                padding: EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.wifi_off_rounded, size: 64),
+                    SizedBox(height: 16),
+                    Text(
+                      'Internet connection required',
+                      style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'PromptGo works online only. Connect to the internet and try again.',
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 20),
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return FutureBuilder<Map<String, dynamic>?>(
+          future: _requiredUpdate(),
+          builder: (context, update) {
+            if (update.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (update.hasError) {
+              return const Scaffold(
+                body: Center(
+                  child: Text('Could not check app version. Please reconnect.'),
+                ),
+              );
+            }
+            final requiredUpdate = update.data;
+            if (requiredUpdate != null) {
+              return ForceUpdatePage(update: requiredUpdate);
+            }
+            return const PromptLibrary();
+          },
+        );
+      },
+    );
+  }
 }
 
 class ForceUpdatePage extends StatelessWidget {
