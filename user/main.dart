@@ -139,6 +139,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   Timer? _latestSlideTimer;
   List<Map<String, dynamic>> _latestSliderPosts = [];
   final Set<String> favoriteIds = <String>{};
+  StreamSubscription<RemoteMessage>? _foregroundMessages;
   String selectedCategory = 'All';
   bool showFavoritesOnly = false;
   int _itemsToShow = 10;
@@ -147,6 +148,12 @@ class _PromptLibraryState extends State<PromptLibrary> {
   void initState() {
     super.initState();
     _loadFavorites();
+    _foregroundMessages = FirebaseMessaging.onMessage.listen((message) {
+      if (!mounted) return;
+      final title = message.notification?.title ?? 'New PromptGo post';
+      final body = message.notification?.body ?? 'A new prompt is available.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$title: $body'), duration: const Duration(seconds: 5)));
+    });
     _latestSlideTimer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted || !_latestPageController.hasClients || _latestSliderPosts.length < 2) return;
       final current = (_latestPageController.page ?? 0).round();
@@ -166,6 +173,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   @override
   void dispose() {
     _latestSlideTimer?.cancel();
+    _foregroundMessages?.cancel();
     _latestPageController.dispose();
     searchController.dispose();
     super.dispose();
