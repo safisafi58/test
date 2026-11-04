@@ -16,6 +16,7 @@ jobs:
         run: |
           flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_admin admin_app
           sed -i 's/android:label="promptgo_admin"/android:label="PromptGo Admin"/' admin_app/android/app/src/main/AndroidManifest.xml
+          if [ -f admin_app/android/app/build.gradle.kts ]; then sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' admin_app/android/app/build.gradle.kts; else sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/' admin_app/android/app/build.gradle; fi
       - name: Remove generated template tests
         run: rm -rf admin_app/test
       - name: Install PromptGo Admin source
@@ -29,6 +30,7 @@ jobs:
         run: |
           flutter create --platforms=android --org com.safisafi.promptgo --project-name promptgo_user user_app
           sed -i 's/android:label="promptgo_user"/android:label="PromptGo"/' user_app/android/app/src/main/AndroidManifest.xml
+          if [ -f user_app/android/app/build.gradle.kts ]; then sed -i 's/minSdk = flutter.minSdkVersion/minSdk = 24/' user_app/android/app/build.gradle.kts; else sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 24/' user_app/android/app/build.gradle; fi
       - name: Remove generated template tests
         run: rm -rf user_app/test
       - name: Install PromptGo User source
