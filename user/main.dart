@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 final ValueNotifier<ThemeMode> promptGoThemeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
+final ValueNotifier<Color> promptGoAccent = ValueNotifier<Color>(const Color(0xff6750a4));
 
 final ValueNotifier<String> promptGoLanguage = ValueNotifier<String>('English');
 const promptGoLanguages = <String>['Pashto','Persian','Dari','Urdu','Arabic','English','German','French','Spanish','Turkish','Chinese','Hindi','Bengali'];
@@ -52,18 +55,24 @@ Future<void> main() async {
   final savedTheme = prefs.getString('promptgo_theme') ?? 'system';
   promptGoLanguage.value = prefs.getString('promptgo_language') ?? 'English';
   promptGoThemeMode.value = savedTheme == 'dark' ? ThemeMode.dark : savedTheme == 'light' ? ThemeMode.light : ThemeMode.system;
+  final savedAccent = prefs.getInt('promptgo_accent');
+  if (savedAccent != null) promptGoAccent.value = Color(savedAccent);
+  try {
+    await FirebaseMessaging.instance.requestPermission();
+    await FirebaseMessaging.instance.subscribeToTopic('promptgo_new_posts');
+  } catch (_) {}
   runApp(const PromptGoUser());
 }
 
 class PromptGoUser extends StatelessWidget {
   const PromptGoUser({super.key});
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(animation: Listenable.merge([promptGoThemeMode, promptGoLanguage]), builder: (context, _) => MaterialApp(
+  Widget build(BuildContext context) => AnimatedBuilder(animation: Listenable.merge([promptGoThemeMode, promptGoLanguage, promptGoAccent]), builder: (context, _) => MaterialApp(
     title: 'PromptGo',
     debugShowCheckedModeBanner: false,
     themeMode: promptGoThemeMode.value,
-    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xff6750a4)), scaffoldBackgroundColor: const Color(0xfff7f7fa)),
-    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xffb9a5ff), brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014)),
+    theme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value), scaffoldBackgroundColor: const Color(0xfff7f7fa)),
+    darkTheme: ThemeData(useMaterial3: true, colorScheme: ColorScheme.fromSeed(seedColor: promptGoAccent.value, brightness: Brightness.dark), scaffoldBackgroundColor: const Color(0xff101014)),
     builder: (context, child) => Directionality(textDirection: promptGoIsRtl ? TextDirection.rtl : TextDirection.ltr, child: child ?? const SizedBox.shrink()),
     home: const PromptGoSplash(),
   ));
@@ -74,23 +83,30 @@ class PromptGoSplash extends StatefulWidget {
   @override
   State<PromptGoSplash> createState() => _PromptGoSplashState();
 }
-class _PromptGoSplashState extends State<PromptGoSplash> {
+class _PromptGoSplashState extends State<PromptGoSplash> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500))..forward();
+  late final Animation<double> _scale = CurvedAnimation(parent: _controller, curve: Curves.elasticOut);
+  late final Animation<double> _fade = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const PromptLibrary()));
+    Future.delayed(const Duration(milliseconds: 1900), () {
+      if (mounted) Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const OnlineGate()));
     });
   }
   @override
-  Widget build(BuildContext context) => Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Image.asset('assets/sp.png', width: 180, height: 180, fit: BoxFit.contain),
-    const SizedBox(height: 12),
-    const Text('PromptGo', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
-    const SizedBox(height: 6),
-    Text('IDEAS INTO ACTION', style: TextStyle(letterSpacing: 3, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-    const SizedBox(height: 24), const CircularProgressIndicator(),
-  ])));
+  void dispose() { _controller.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Scaffold(body: Center(child: AnimatedBuilder(animation: _controller, builder: (context, _) => FadeTransition(opacity: _fade, child: ScaleTransition(scale: _scale, child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(shape: BoxShape.circle, color: Theme.of(context).colorScheme.primaryContainer, boxShadow: [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: .25), blurRadius: 35, spreadRadius: 5)]), child: ColorFiltered(colorFilter: ColorFilter.mode(dark ? Colors.white : Colors.transparent, BlendMode.srcATop), child: Image.asset('assets/sp.png', width: 138, height: 138, fit: BoxFit.contain))),
+      const SizedBox(height: 22),
+      const Text('PromptGo', style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: .5)),
+      const SizedBox(height: 7),
+      Text('IDEAS INTO ACTION', style: TextStyle(letterSpacing: 3, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+      const SizedBox(height: 30), SizedBox(width: 28, height: 28, child: CircularProgressIndicator(strokeWidth: 2.5)),
+    ])))));
   }
 
 class PromptLibrary extends StatefulWidget {
@@ -106,6 +122,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   final Set<String> favoriteIds = <String>{};
   String selectedCategory = 'All';
   bool showFavoritesOnly = false;
+  int _itemsToShow = 10;
 
   @override
   void initState() {
@@ -141,7 +158,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
     return Scaffold(
       drawer: _buildDrawer(context),
       appBar: AppBar(
-        title: const Row(children: [Icon(Icons.auto_awesome_rounded), SizedBox(width: 9), Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
+        title: Row(children: [Image.asset('assets/sp.png', width: 30, height: 30, fit: BoxFit.contain), const SizedBox(width: 9), const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900))]),
         actions: [
           IconButton(tooltip: 'Favorites', onPressed: () => setState(() => showFavoritesOnly = !showFavoritesOnly), icon: Icon(showFavoritesOnly ? Icons.favorite : Icons.favorite_border)),
         ],
@@ -185,6 +202,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
             return categoryMatch && favoriteMatch && searchMatch;
           }).toList();
 
+          final shownCount = visible.length < _itemsToShow ? visible.length : _itemsToShow;
           return SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             _buildLatestPostsSlider(context),
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: TextField(
@@ -217,7 +235,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-                  itemCount: visible.length,
+                  itemCount: shownCount,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10, childAspectRatio: 0.82),
                   itemBuilder: (context, index) {
                     final p = visible[index];
@@ -233,6 +251,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                     ]))); 
                   },
                 ),
+            if (visible.length > _itemsToShow) Padding(padding: const EdgeInsets.fromLTRB(20, 0, 20, 28), child: FilledButton.icon(onPressed: () => setState(() => _itemsToShow += 10), icon: const Icon(Icons.expand_more_rounded), label: const Text('Load 10 more prompts'))),
           ]));
         },
       ),
@@ -279,8 +298,8 @@ class _PromptLibraryState extends State<PromptLibrary> {
   }
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
-    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: const CircleAvatar(child: Icon(Icons.auto_awesome, size: 30))),
-    ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); _showSettings(context); }),
+    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: Image.asset('assets/sp.png', width: 42, height: 42, fit: BoxFit.contain))),
+    ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); _showThemePicker(context); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
     const Divider(),
@@ -288,8 +307,9 @@ class _PromptLibraryState extends State<PromptLibrary> {
     ListTile(leading: const Icon(Icons.star_outline), title: Text(pg('Rate app')), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://play.google.com/store/search?q=PromptGo&c=apps'), mode: LaunchMode.externalApplication); }),
     ListTile(leading: const Icon(Icons.share_outlined), title: Text(pg('Share app')), onTap: () { Navigator.pop(context); Share.share('Try PromptGo — an AI prompt library for creative ideas.'); }),
     ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage())); }),
+    ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: const Text('Privacy Policy'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyPage())); }),
     const Divider(),
-    ListTile(leading: const Icon(Icons.exit_to_app), title: Text(pg('Exit')), onTap: () { Navigator.pop(context); SystemNavigator.pop(); }),
+    ListTile(leading: const Icon(Icons.exit_to_app), title: Text(pg('Exit')), onTap: () async { Navigator.pop(context); final leave = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Exit PromptGo?'), content: const Text('Do you want to close the app?'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Exit'))])); if (leave == true) SystemNavigator.pop(); }),
   ])));
 
   void _showSettings(BuildContext context) => showModalBottomSheet<void>(context: context, showDragHandle: true, builder: (ctx) => SafeArea(child: ListView(shrinkWrap: true, children: [
@@ -314,29 +334,54 @@ class AboutPromptGoPage extends StatelessWidget {
   const AboutPromptGoPage({super.key});
   @override
   Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('About'))), body: ListView(padding: const EdgeInsets.all(20), children: [
-    const Icon(Icons.auto_awesome_rounded, size: 64),
-    const SizedBox(height: 12),
+    Center(child: Image.asset('assets/sp.png', width: 76, height: 76)),
+    const SizedBox(height: 10),
     const Center(child: Text('PromptGo', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900))),
     const SizedBox(height: 20),
     Text(pg('App guide'), style: const TextStyle(fontSize: 21, fontWeight: FontWeight.w900)),
     const SizedBox(height: 12),
-    const Text('1. Browse prompt cards on the Home screen.\n\n2. Use search or category filters to find prompts.\n\n3. Tap a card to open its details and view the image.\n\n4. Wait until the prompt text finishes appearing; the Copy button becomes active when ready.\n\n5. Tap Copy prompt, then paste it into your favorite AI app.\n\n6. Tap the heart icon to save prompts to Favorites.\n\n7. Open Settings to change language or choose Light, Dark, or Automatic appearance.\n\nPromptGo needs an internet connection to load online prompts.'),
-    const SizedBox(height: 16), const Text('Version 1.0.0 • Ideas into action', style: TextStyle(fontWeight: FontWeight.w700)),
+    const Text('1. Browse prompt cards on the Home screen.\n\n2. Use search or category filters to find prompts.\n\n3. Tap a card to open its details and view the image.\n\n4. Wait until the prompt text finishes appearing; the Copy button becomes active when ready.\n\n5. Tap Copy prompt, then paste it into your favorite AI app.\n\n6. Tap the heart icon to save prompts to Favorites.\n\n7. Open Settings to change language or choose Light, Dark, or Automatic appearance.\n\nPromptGo requires an active internet connection.'),
+    const SizedBox(height: 18),
+    StreamBuilder<DatabaseEvent>(stream: FirebaseDatabase.instance.ref('appInfo/creator').onValue, builder: (context, snap) {
+      final raw = snap.data?.snapshot.value;
+      if (raw is! Map) return const SizedBox.shrink();
+      final d = Map<dynamic,dynamic>.from(raw);
+      final name = (d['name'] ?? '').toString();
+      if (name.isEmpty) return const SizedBox.shrink();
+      return Card(child: ListTile(leading: const Icon(Icons.person_outline), title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)), subtitle: Text((d['bio'] ?? '').toString(), maxLines: 3, overflow: TextOverflow.ellipsis)));
+    }),
+    const SizedBox(height: 12),
+    const Text('Privacy Policy', style: TextStyle(fontWeight: FontWeight.w800)),
+    const Text('PromptGo uses Firebase to display online prompts and app information. It does not provide offline access. Notifications are optional and can be disabled in Android settings.'),
+    const SizedBox(height: 14), const Text('Version 1.0.0 • Ideas into action', style: TextStyle(fontWeight: FontWeight.w700)),
   ]));
 }
 class CreatorInfoPage extends StatelessWidget {
   const CreatorInfoPage({super.key});
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('Creator info'))), body: ListView(padding: const EdgeInsets.all(22), children: [
-    Center(child: ClipRRect(borderRadius: BorderRadius.circular(100), child: Image.asset('assets/admin.JPG', width: 150, height: 150, fit: BoxFit.cover))),
-    const SizedBox(height: 18),
-    const Center(child: Text('Sayed Safi', style: TextStyle(fontSize: 27, fontWeight: FontWeight.w900))),
-    const SizedBox(height: 14),
-    const Text('Sayed Safi is the creator of PromptGo. He works to make creative ideas and useful AI prompts easier to discover, organize, and use. PromptGo helps people find inspiration, explore visual styles, and copy ready-to-use prompts with ease.'),
-    const SizedBox(height: 24),
-    Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: const Text('Email'), subtitle: const Text('noorrahmansayede07@gmail.com'), onTap: () => launchUrl(Uri.parse('mailto:noorrahmansayede07@gmail.com')))),
-    Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: const Text('WhatsApp'), subtitle: const Text('+93744864493'), onTap: () => launchUrl(Uri.parse('https://wa.me/93744864493'), mode: LaunchMode.externalApplication))),
-  ]));
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('Creator info'))), body: StreamBuilder<DatabaseEvent>(
+    stream: FirebaseDatabase.instance.ref('appInfo/creator').onValue,
+    builder: (context, snap) {
+      final raw = snap.data?.snapshot.value;
+      final d = raw is Map ? Map<dynamic,dynamic>.from(raw) : <dynamic,dynamic>{};
+      final name = (d['name'] ?? 'Sayed Safi').toString();
+      final bio = (d['bio'] ?? 'PromptGo creator').toString();
+      final image = (d['imageUrl'] ?? '').toString();
+      final email = (d['email'] ?? 'noorrahmansayede07@gmail.com').toString();
+      final whatsapp = (d['whatsapp'] ?? '+93744864493').toString();
+      final extra = (d['extraContact'] ?? '').toString();
+      return ListView(padding: const EdgeInsets.all(22), children: [
+        Center(child: ClipRRect(borderRadius: BorderRadius.circular(100), child: image.isNotEmpty ? Image.network(image, width: 150, height: 150, fit: BoxFit.cover, errorBuilder: (_,__,___) => Image.asset('assets/admin.JPG',width:150,height:150,fit:BoxFit.cover)) : Image.asset('assets/admin.JPG', width: 150, height: 150, fit: BoxFit.cover))),
+        const SizedBox(height: 18),
+        Center(child: Text(name, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w900))),
+        const SizedBox(height: 14), Text(bio),
+        const SizedBox(height: 24),
+        if (email.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: const Text('Email'), subtitle: Text(email), onTap: () => launchUrl(Uri.parse('mailto:$email')))),
+        if (whatsapp.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: const Text('WhatsApp'), subtitle: Text(whatsapp), onTap: () => launchUrl(Uri.parse('https://wa.me/${whatsapp.replaceAll(RegExp(r'[^0-9]'), '')}'), mode: LaunchMode.externalApplication))),
+        if (extra.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.contact_phone_outlined), title: const Text('Other contact'), subtitle: Text(extra))),
+      ]);
+    },
+  ));
 }
 
 class PromptDetailPage extends StatefulWidget {
@@ -379,4 +424,105 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
       SizedBox(height: 52, child: FilledButton.icon(onPressed: _typingComplete && fullText.isNotEmpty ? () async { await Clipboard.setData(ClipboardData(text: fullText)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Prompt copied successfully'))); } : null, icon: const Icon(Icons.copy_rounded), label: const Text('Copy prompt'))),
     ]));
   }
+}
+
+
+class OnlineGate extends StatelessWidget {
+  const OnlineGate({super.key});
+  Future<Map<String,dynamic>?> _requiredUpdate() async {
+    final snap = await FirebaseDatabase.instance.ref('appUpdate').get();
+    if (snap.value is! Map) return null;
+    final data = Map<dynamic,dynamic>.from(snap.value as Map);
+    if (data['forceUpdate'] != true) return null;
+    final info = await PackageInfo.fromPlatform();
+    int compare(String a, String b) {
+      final aa = a.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      final bb = b.split('.').map((e) => int.tryParse(e) ?? 0).toList();
+      for (var i=0;i<3;i++) { final x=i<aa.length?aa[i]:0; final y=i<bb.length?bb[i]:0; if(x!=y) return x.compareTo(y); }
+      return 0;
+    }
+    final latest = (data['version'] ?? '1.0.0').toString();
+    return compare(info.version, latest) < 0 ? data.map((k,v) => MapEntry(k.toString(),v)) : null;
+  }
+  @override
+  Widget build(BuildContext context) => StreamBuilder<DatabaseEvent>(
+    stream: FirebaseDatabase.instance.ref('.info/connected').onValue,
+    builder: (context, connection) {
+      if (connection.data?.snapshot.value != true) return Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.wifi_off_rounded, size: 64), const SizedBox(height: 16),
+        const Text('Internet connection required', style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+        const SizedBox(height: 8), const Text('PromptGo works online only. Connect to the internet and try again.', textAlign: TextAlign.center),
+        const SizedBox(height: 20), const CircularProgressIndicator(),
+      ]))));
+      return FutureBuilder<Map<String,dynamic>?>(future: _requiredUpdate(), builder: (context, update) {
+        if (update.connectionState != ConnectionState.done) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (update.hasError) return const Scaffold(body: Center(child: Text('Could not check app version. Please reconnect.')));
+        if (update.data != null) return ForceUpdatePage(update: update.data!);
+        return const PromptLibrary();
+      });
+    },
+  );
+}
+
+class ForceUpdatePage extends StatelessWidget {
+  final Map<String,dynamic> update;
+  const ForceUpdatePage({super.key, required this.update});
+  @override
+  Widget build(BuildContext context) {
+    final url = (update['apkUrl'] ?? '').toString();
+    return PopScope(canPop: false, child: Scaffold(body: Center(child: Padding(padding: const EdgeInsets.all(28), child: Column(mainAxisSize: MainAxisSize.min, children: [
+      const Icon(Icons.system_update_alt_rounded, size: 76), const SizedBox(height: 18),
+      const Text('Update required', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 10), Text('Version ${update['version'] ?? ''} is required to continue.', textAlign: TextAlign.center),
+      if ((update['releaseNotes'] ?? '').toString().isNotEmpty) Padding(padding: const EdgeInsets.only(top: 12), child: Text(update['releaseNotes'].toString(), textAlign: TextAlign.center)),
+      const SizedBox(height: 24),
+      SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: url.startsWith('https://') ? () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication) : null, icon: const Icon(Icons.download_rounded), label: const Text('Download update'))),
+    ]))));
+  }
+}
+
+class SettingsPage extends StatelessWidget {
+  const SettingsPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('Settings'))), body: ListView(padding: const EdgeInsets.all(16), children: [
+    Text(pg('Language'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+    const SizedBox(height: 8),
+    ...promptGoLanguages.map((language) => RadioListTile<String>(value: language, groupValue: promptGoLanguage.value, title: Text(language), onChanged: (value) async { if (value != null) { promptGoLanguage.value=value; final p=await SharedPreferences.getInstance(); await p.setString('promptgo_language',value); } })),
+    const Divider(height: 30),
+    Text(pg('Appearance'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+    for (final item in <MapEntry<ThemeMode,String>>[MapEntry(ThemeMode.system,pg('Automatic')),MapEntry(ThemeMode.light,pg('Light')),MapEntry(ThemeMode.dark,pg('Dark'))])
+      RadioListTile<ThemeMode>(value:item.key,groupValue:promptGoThemeMode.value,title:Text(item.value),onChanged:(v) async { if(v!=null){promptGoThemeMode.value=v; final p=await SharedPreferences.getInstance(); await p.setString('promptgo_theme',v.name);} }),
+    const Divider(height: 30),
+    const Text('Accent color', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+    const SizedBox(height: 12),
+    Wrap(spacing: 14, children: [
+      for (final c in <Color>[const Color(0xff6750a4),const Color(0xff1565c0),const Color(0xff00897b),const Color(0xffef6c00)])
+        GestureDetector(onTap: () async { promptGoAccent.value=c; final p=await SharedPreferences.getInstance(); await p.setInt('promptgo_accent',c.value); }, child: CircleAvatar(radius: 23, backgroundColor:c, child: promptGoAccent.value.value==c.value?const Icon(Icons.check,color:Colors.white):null)),
+    ]),
+    const SizedBox(height: 24),
+    ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: const Text('Privacy Policy'), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const PrivacyPolicyPage()))),
+    ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const AboutPromptGoPage()))),
+  ]));
+}
+
+class PrivacyPolicyPage extends StatelessWidget {
+  const PrivacyPolicyPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Privacy Policy')), body: ListView(padding: const EdgeInsets.all(20), children: const [
+    Text('PromptGo Privacy Policy', style: TextStyle(fontSize: 24,fontWeight:FontWeight.w900)),
+    SizedBox(height: 14),
+    Text('PromptGo connects to Firebase to retrieve prompt posts, creator information and update information. The app requires an internet connection and does not offer offline browsing.'),
+    SizedBox(height: 12),
+    Text('Data: Favorites and appearance preferences are stored on your device. Firebase may process technical data required to provide database and notification services.'),
+    SizedBox(height: 12),
+    Text('Notifications: PromptGo may ask permission to send notifications about new prompts. You can disable notifications at any time in Android system settings.'),
+    SizedBox(height: 12),
+    Text('Contacts: If you choose to contact the creator, your device opens the relevant email or messaging app. PromptGo does not send messages on your behalf.'),
+    SizedBox(height: 12),
+    Text('Children: PromptGo is not designed to collect personal information from children.'),
+    SizedBox(height: 12),
+    Text('Changes: This policy may be updated when app features change.'),
+    SizedBox(height: 12),
+    Text('Contact: noorrahmansayede07@gmail.com'),
+  ]));
 }
