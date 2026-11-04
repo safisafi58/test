@@ -425,6 +425,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
 
           final shownCount = visible.length < _itemsToShow ? visible.length : _itemsToShow;
           return SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+            _buildAdvertisementSection(context),
             _buildLatestPostsSlider(context),
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: TextField(
               controller: searchController,
@@ -477,6 +478,46 @@ class _PromptLibraryState extends State<PromptLibrary> {
         },
       ),
     ));
+  }
+
+
+  Widget _buildAdvertisementSection(BuildContext context) {
+    return StreamBuilder<DatabaseEvent>(
+      stream: FirebaseDatabase.instance.ref('appAds').onValue,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.hasError) return const SizedBox.shrink();
+        final raw = snapshot.data!.snapshot.value;
+        if (raw is! Map) return const SizedBox.shrink();
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final active = <Map<String,dynamic>>[];
+        for (final entry in raw.entries) {
+          if (entry.value is! Map) continue;
+          final data = Map<dynamic,dynamic>.from(entry.value as Map);
+          final start = data['startAt'] is num ? (data['startAt'] as num).toInt() : 0;
+          final end = data['endAt'] is num ? (data['endAt'] as num).toInt() : 0;
+          if (data['enabled'] == true && start <= now && now < end && (data['imageUrl'] ?? '').toString().isNotEmpty) {
+            active.add({'id': entry.key.toString(), 'title': (data['title'] ?? '').toString(), 'imageUrl': data['imageUrl'].toString(), 'description': (data['description'] ?? '').toString(), 'buttonText': (data['buttonText'] ?? 'Open').toString(), 'buttonUrl': (data['buttonUrl'] ?? '').toString(), 'createdAt': data['createdAt'] is num ? data['createdAt'] as num : 0});
+          }
+        }
+        if (active.isEmpty) return const SizedBox.shrink();
+        active.sort((a,b) => (b['createdAt'] as num).compareTo(a['createdAt'] as num));
+        final ad = active.first;
+        return Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Card(clipBehavior: Clip.antiAlias, elevation: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(padding: const EdgeInsets.fromLTRB(14, 10, 14, 8), child: Row(children: [
+            const Icon(Icons.campaign_outlined, size: 18), const SizedBox(width: 7),
+            const Text('Sponsored', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .8)),
+            const Spacer(),
+            if ((ad['title'] as String).isNotEmpty) Flexible(child: Text(ad['title'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12))),
+          ])),
+          Image.network(ad['imageUrl'] as String, width: double.infinity, height: 170, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox(height: 90, child: Center(child: Icon(Icons.broken_image_outlined)))),
+          if ((ad['description'] as String).isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(14, 10, 14, 0), child: Text(ad['description'] as String)),
+          Padding(padding: const EdgeInsets.all(12), child: FilledButton.icon(onPressed: () {
+            final uri = Uri.tryParse(ad['buttonUrl'] as String);
+            if (uri != null && ['http','https'].contains(uri.scheme)) launchUrl(uri, mode: LaunchMode.externalApplication);
+          }, icon: const Icon(Icons.open_in_new), label: Text(ad['buttonText'] as String))),
+        ])));
+      },
+    );
   }
 
   Widget _buildLatestPostsSlider(BuildContext context) {
