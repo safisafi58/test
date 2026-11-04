@@ -425,7 +425,6 @@ class _PromptLibraryState extends State<PromptLibrary> {
 
           final shownCount = visible.length < _itemsToShow ? visible.length : _itemsToShow;
           return SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            _buildAdvertisementSection(context),
             _buildLatestPostsSlider(context),
             Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 12), child: TextField(
               controller: searchController,
@@ -446,6 +445,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                 return ChoiceChip(label: Text(category), selected: selectedCategory == category, onSelected: (_) => setState(() => selectedCategory = category));
               },
             )),
+            _buildAdvertisementSection(context),
             const SizedBox(height: 10),
             visible.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -502,19 +502,22 @@ class _PromptLibraryState extends State<PromptLibrary> {
         if (active.isEmpty) return const SizedBox.shrink();
         active.sort((a,b) => (b['createdAt'] as num).compareTo(a['createdAt'] as num));
         final ad = active.first;
-        return Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 8), child: Card(clipBehavior: Clip.antiAlias, elevation: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Padding(padding: const EdgeInsets.fromLTRB(14, 10, 14, 8), child: Row(children: [
-            const Icon(Icons.campaign_outlined, size: 18), const SizedBox(width: 7),
-            const Text('Sponsored', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: .8)),
+        return Padding(padding: const EdgeInsets.fromLTRB(16, 8, 16, 14), child: Card(clipBehavior: Clip.antiAlias, elevation: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 6), child: Row(children: [
+            const Icon(Icons.campaign_outlined, size: 15), const SizedBox(width: 6),
+            const Text('Sponsored', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: .7)),
             const Spacer(),
-            if ((ad['title'] as String).isNotEmpty) Flexible(child: Text(ad['title'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12))),
+            if ((ad['title'] as String).isNotEmpty) Flexible(child: Text(ad['title'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11))),
           ])),
-          Image.network(ad['imageUrl'] as String, width: double.infinity, height: 170, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox(height: 90, child: Center(child: Icon(Icons.broken_image_outlined)))),
-          if ((ad['description'] as String).isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(14, 10, 14, 0), child: Text(ad['description'] as String)),
-          Padding(padding: const EdgeInsets.all(12), child: FilledButton.icon(onPressed: () {
+          SizedBox(height: 100, width: double.infinity, child: InkWell(onTap: () {
             final uri = Uri.tryParse(ad['buttonUrl'] as String);
             if (uri != null && ['http','https'].contains(uri.scheme)) launchUrl(uri, mode: LaunchMode.externalApplication);
-          }, icon: const Icon(Icons.open_in_new), label: Text(ad['buttonText'] as String))),
+          }, child: Image.network(ad['imageUrl'] as String, width: double.infinity, height: 100, fit: BoxFit.cover, errorBuilder: (_,__,___) => const Center(child: Icon(Icons.broken_image_outlined))))),
+          if ((ad['description'] as String).isNotEmpty) Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 0), child: Text(ad['description'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12))),
+          Padding(padding: const EdgeInsets.fromLTRB(12, 7, 12, 10), child: Align(alignment: Alignment.centerRight, child: FilledButton.tonalIcon(onPressed: () {
+            final uri = Uri.tryParse(ad['buttonUrl'] as String);
+            if (uri != null && ['http','https'].contains(uri.scheme)) launchUrl(uri, mode: LaunchMode.externalApplication);
+          }, icon: const Icon(Icons.open_in_new, size: 16), label: Text(ad['buttonText'] as String)))),
         ])));
       },
     );
