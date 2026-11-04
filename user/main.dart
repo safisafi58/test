@@ -58,7 +58,6 @@ class _PromptGoSplashState extends State<PromptGoSplash> {
     const SizedBox(height: 24), const CircularProgressIndicator(),
   ])));
   }
-}
 
 class PromptLibrary extends StatefulWidget {
   const PromptLibrary({super.key});
