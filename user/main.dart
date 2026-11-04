@@ -446,7 +446,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                     final imageUrl = (p['imageUrl'] ?? '').toString();
                     return Card(clipBehavior: Clip.antiAlias, child: InkWell(onTap: () => _showDetails(context, p), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(child: Stack(fit: StackFit.expand, children: [
-                        if (imageUrl.isNotEmpty) Image.network(imageUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined))) else Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.image_outlined, size: 42)),
+                        if (imageUrl.isNotEmpty) GestureDetector(onTap: () => _viewPromptImage(context, imageUrl), child: Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, alignment: Alignment.center, child: Image.network(imageUrl, width: double.infinity, height: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined)))) else Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.image_outlined, size: 42)),
                         Positioned(right: 4, top: 4, child: CircleAvatar(backgroundColor: Colors.black45, radius: 17, child: IconButton(padding: EdgeInsets.zero, iconSize: 18, onPressed: () => _toggleFavorite(id), icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: Colors.white)))),
                       ])),
                       Padding(padding: const EdgeInsets.fromLTRB(10, 9, 10, 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p['title'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)), const SizedBox(height: 5), Text(p['category'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary))])),
@@ -494,6 +494,10 @@ class _PromptLibraryState extends State<PromptLibrary> {
     decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(20)),
     child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onPrimaryContainer)),
   );
+
+  void _viewPromptImage(BuildContext context, String imageUrl) {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => PromptImageViewer(imageUrl: imageUrl)));
+  }
 
   void _showDetails(BuildContext context, Map<String, dynamic> p) {
     Navigator.push(context, MaterialPageRoute(builder: (_) => PromptDetailPage(prompt: p)));
@@ -596,6 +600,19 @@ class CreatorInfoPage extends StatelessWidget {
   ));
 }
 
+class PromptImageViewer extends StatelessWidget {
+  final String imageUrl;
+  const PromptImageViewer({super.key, required this.imageUrl});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.black,
+    appBar: AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white, title: const Text('View image'), elevation: 0),
+    body: Center(child: InteractiveViewer(minScale: 0.5, maxScale: 5, child: Image.network(imageUrl, fit: BoxFit.contain, width: double.infinity, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined, color: Colors.white, size: 56)))),
+  );
+}
+
+
 class PromptDetailPage extends StatefulWidget {
   final Map<String, dynamic> prompt;
   const PromptDetailPage({super.key, required this.prompt});
@@ -624,7 +641,7 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
     final imageUrl = (widget.prompt['imageUrl'] ?? '').toString();
     final fullText = (widget.prompt['content'] ?? '').toString();
     return Scaffold(appBar: AppBar(title: const Text('Prompt details')), body: ListView(padding: const EdgeInsets.all(16), children: [
-      if (imageUrl.isNotEmpty) ClipRRect(borderRadius: BorderRadius.circular(18), child: Image.network(imageUrl, width: double.infinity, height: 250, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(height: 180, color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.broken_image_outlined, size: 48)))),
+      if (imageUrl.isNotEmpty) GestureDetector(onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => PromptImageViewer(imageUrl: imageUrl))), child: ClipRRect(borderRadius: BorderRadius.circular(18), child: Container(width: double.infinity, color: Theme.of(context).colorScheme.surfaceContainerHighest, alignment: Alignment.center, child: ConstrainedBox(constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.62), child: Image.network(imageUrl, width: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox(height: 180, child: Icon(Icons.broken_image_outlined, size: 48))))))),
       const SizedBox(height: 18),
       Text((widget.prompt['category'] ?? '').toString(), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w800)),
       const SizedBox(height: 6), Text((widget.prompt['title'] ?? '').toString(), style: const TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
