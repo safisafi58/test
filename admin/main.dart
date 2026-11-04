@@ -241,6 +241,116 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   );
 }
 
+
+class AdminAdsPage extends StatefulWidget {
+  const AdminAdsPage({super.key});
+  @override
+  State<AdminAdsPage> createState() => _AdminAdsPageState();
+}
+class _AdminAdsPageState extends State<AdminAdsPage> {
+  final DatabaseReference adsRef = FirebaseDatabase.instance.ref('appAds');
+  Future<DateTime?> _pickDateTime(DateTime initial) async {
+    final date = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(2020), lastDate: DateTime(2100));
+    if (date == null || !mounted) return null;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(initial));
+    if (time == null) return null;
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+  }
+  Future<void> _editAd({String? id, Map<dynamic, dynamic>? old}) async {
+    final title = TextEditingController(text: (old?['title'] ?? '').toString());
+    final image = TextEditingController(text: (old?['imageUrl'] ?? '').toString());
+    final description = TextEditingController(text: (old?['description'] ?? '').toString());
+    final buttonText = TextEditingController(text: (old?['buttonText'] ?? 'Open').toString());
+    final buttonUrl = TextEditingController(text: (old?['buttonUrl'] ?? '').toString());
+    DateTime start = DateTime.fromMillisecondsSinceEpoch(old?['startAt'] is num ? (old!['startAt'] as num).toInt() : DateTime.now().millisecondsSinceEpoch);
+    DateTime end = DateTime.fromMillisecondsSinceEpoch(old?['endAt'] is num ? (old!['endAt'] as num).toInt() : DateTime.now().add(const Duration(days: 7)).millisecondsSinceEpoch);
+    bool enabled = old?['enabled'] != false;
+    String? error;
+    String fmt(DateTime d) => '\${d.year.toString().padLeft(4,'0')}-\${d.month.toString().padLeft(2,'0')}-\${d.day.toString().padLeft(2,'0')}  \${d.hour.toString().padLeft(2,'0')}:\${d.minute.toString().padLeft(2,'0')}';
+    await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setDialogState) => AlertDialog(
+      title: Text(id == null ? 'Create advertisement' : 'Edit advertisement'),
+      content: SizedBox(width: 460, child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: title, decoration: const InputDecoration(labelText: 'Ad title (optional)', prefixIcon: Icon(Icons.title))),
+        const SizedBox(height: 10),
+        TextField(controller: image, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Image URL *', prefixIcon: Icon(Icons.image_outlined))),
+        const SizedBox(height: 10),
+        TextField(controller: description, maxLines: 2, decoration: const InputDecoration(labelText: 'Description (optional)')),
+        const SizedBox(height: 10),
+        TextField(controller: buttonText, decoration: const InputDecoration(labelText: 'Button name *', prefixIcon: Icon(Icons.smart_button_outlined))),
+        const SizedBox(height: 10),
+        TextField(controller: buttonUrl, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Button link URL *', prefixIcon: Icon(Icons.link))),
+        const SizedBox(height: 14),
+        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.schedule), title: const Text('Show from'), subtitle: Text(fmt(start)), trailing: IconButton(icon: const Icon(Icons.edit_calendar), onPressed: () async { final d = await _pickDateTime(start); if (d != null) setDialogState(() => start = d); })),
+        ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.event_available), title: const Text('Show until'), subtitle: Text(fmt(end)), trailing: IconButton(icon: const Icon(Icons.edit_calendar), onPressed: () async { final d = await _pickDateTime(end); if (d != null) setDialogState(() => end = d); })),
+        SwitchListTile(contentPadding: EdgeInsets.zero, title: const Text('Advertisement enabled'), value: enabled, onChanged: (v) => setDialogState(() => enabled = v)),
+        if (error != null) Align(alignment: Alignment.centerLeft, child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error))),
+      ]))),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+        FilledButton.icon(onPressed: () async {
+          final imageUri = Uri.tryParse(image.text.trim());
+          final linkUri = Uri.tryParse(buttonUrl.text.trim());
+          if (imageUri == null || !imageUri.hasScheme || !['http','https'].contains(imageUri.scheme) || linkUri == null || !linkUri.hasScheme || !['http','https'].contains(linkUri.scheme) || buttonText.text.trim().isEmpty) {
+            setDialogState(() => error = 'Enter a valid image URL, button name and button link.');
+            return;
+          }
+          if (!end.isAfter(start)) { setDialogState(() => error = 'End time must be after start time.'); return; }
+          final data = <String, dynamic>{'title': title.text.trim(), 'imageUrl': image.text.trim(), 'description': description.text.trim(), 'buttonText': buttonText.text.trim(), 'buttonUrl': buttonUrl.text.trim(), 'startAt': start.millisecondsSinceEpoch, 'endAt': end.millisecondsSinceEpoch, 'enabled': enabled, 'updatedAt': ServerValue.timestamp};
+          try {
+            if (id == null) { data['createdAt'] = ServerValue.timestamp; await adsRef.push().set(data); }
+            else { await adsRef.child(id).update(data); }
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+            if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(const SnackBar(content: Text('Advertisement saved.')));
+          } catch (e) { setDialogState(() => error = 'Could not save: $e'); }
+        }, icon: const Icon(Icons.save_outlined), label: const Text('Save')),
+      ],
+    )));
+    title.dispose(); image.dispose(); description.dispose(); buttonText.dispose(); buttonUrl.dispose();
+  }
+  Future<void> _deleteAd(String id) async {
+    final confirm = await showDialog<bool>(context: context, builder: (ctx) => AlertDialog(title: const Text('Delete advertisement?'), content: const Text('This advertisement will be removed from the User app immediately.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete'))]));
+    if (confirm == true) await adsRef.child(id).remove();
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Advertisements')),
+    floatingActionButton: FloatingActionButton.extended(onPressed: () => _editAd(), icon: const Icon(Icons.add), label: const Text('New ad')),
+    body: StreamBuilder<DatabaseEvent>(stream: adsRef.onValue, builder: (context, snapshot) {
+      if (snapshot.hasError) return Center(child: Text('Database error: \${snapshot.error}'));
+      if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+      final raw = snapshot.data!.snapshot.value;
+      if (raw is! Map || raw.isEmpty) return const Center(child: Text('No advertisements yet. Tap New ad.'));
+      final entries = raw.entries.where((e) => e.value is Map).toList();
+      return ListView(padding: const EdgeInsets.fromLTRB(14, 12, 14, 90), children: [
+        const Padding(padding: EdgeInsets.all(8), child: Text('Ads appear in the User app only while enabled and within their scheduled time.')),
+        for (final entry in entries) Builder(builder: (context) {
+          final id = entry.key.toString();
+          final data = Map<dynamic,dynamic>.from(entry.value as Map);
+          final startAt = data['startAt'] is num ? DateTime.fromMillisecondsSinceEpoch((data['startAt'] as num).toInt()) : null;
+          final endAt = data['endAt'] is num ? DateTime.fromMillisecondsSinceEpoch((data['endAt'] as num).toInt()) : null;
+          final now = DateTime.now();
+          final active = data['enabled'] == true && startAt != null && endAt != null && !now.isBefore(startAt) && now.isBefore(endAt);
+          return Card(child: ListTile(
+            leading: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.network((data['imageUrl'] ?? '').toString(), width: 58, height: 58, fit: BoxFit.cover, errorBuilder: (_,__,___) => const SizedBox(width:58,height:58,child: Icon(Icons.image_not_supported)))),
+            title: Text((data['title'] ?? 'Advertisement').toString(), style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('\${active ? 'LIVE NOW' : data['enabled'] == true ? 'Scheduled / inactive' : 'Disabled'}\\n\${startAt == null ? '' : startAt.toLocal()} → \${endAt == null ? '' : endAt.toLocal()}', maxLines: 3),
+            isThreeLine: true,
+            trailing: PopupMenuButton<String>(onSelected: (v) {
+              if (v == 'edit') _editAd(id: id, old: data);
+              if (v == 'toggle') adsRef.child(id).update({'enabled': data['enabled'] != true});
+              if (v == 'delete') _deleteAd(id);
+            }, itemBuilder: (_) => [
+              const PopupMenuItem(value: 'edit', child: ListTile(dense:true, leading: Icon(Icons.edit), title: Text('Edit'))),
+              PopupMenuItem(value: 'toggle', child: ListTile(dense:true, leading: Icon(data['enabled'] == true ? Icons.pause : Icons.play_arrow), title: Text(data['enabled'] == true ? 'Disable' : 'Enable'))),
+              const PopupMenuItem(value: 'delete', child: ListTile(dense:true, leading: Icon(Icons.delete_outline), title: Text('Delete'))),
+            ]),
+          ));
+        }),
+      ]);
+    }),
+  );
+}
+
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
 
@@ -256,6 +366,7 @@ class AdminHome extends StatelessWidget {
           currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30)),
         ),
         ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
+        ListTile(leading: const Icon(Icons.campaign_outlined), title: const Text('Advertisements'), subtitle: const Text('Create, schedule, edit or remove ads'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAdsPage())); }),
         ListTile(leading: const Icon(Icons.manage_accounts_outlined), title: const Text('App information & creator'), subtitle: const Text('Edit creator details and contacts'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())); }),
         ListTile(leading: const Icon(Icons.telegram), title: const Text('Add Telegram post'), subtitle: const Text('Import image and text from a public channel'), onTap: () { Navigator.pop(context); addTelegramPrompt(context, ref); }),
         ListTile(leading: const Icon(Icons.system_update_alt), title: const Text('App update'), subtitle: const Text('Publish a required user app update'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage(initialTab: 1))); }),
@@ -265,6 +376,7 @@ class AdminHome extends StatelessWidget {
       appBar: AppBar(
         title: const Text('PromptGo Admin', style: TextStyle(fontWeight: FontWeight.w900)),
         actions: [
+          IconButton(tooltip: 'Advertisements', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAdsPage())), icon: const Icon(Icons.campaign_outlined)),
           IconButton(tooltip: 'Add Telegram post', onPressed: () => addTelegramPrompt(context, ref), icon: const Icon(Icons.telegram)),
           IconButton(tooltip: 'App settings', onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())), icon: const Icon(Icons.settings_suggest_outlined)),
           IconButton(tooltip: 'Sign out', onPressed: () => FirebaseAuth.instance.signOut(), icon: const Icon(Icons.logout)),
