@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -84,6 +85,26 @@ String pgContact(String key) {
   };
   return labels[promptGoLanguage.value]?[key] ?? key;
 }
+
+IconData promptGoSocialIcon(String key) {
+  switch (key.toLowerCase()) {
+    case 'facebook': return Icons.facebook_rounded;
+    case 'instagram': return Icons.camera_alt_outlined;
+    case 'telegram': return Icons.send_rounded;
+    case 'tiktok': return Icons.music_note_rounded;
+    case 'youtube': return Icons.play_circle_outline_rounded;
+    case 'x': return Icons.alternate_email_rounded;
+    case 'linkedin': return Icons.work_outline_rounded;
+    case 'website': return Icons.language_rounded;
+    default: return Icons.link_rounded;
+  }
+}
+
+String promptGoSocialLabel(String key) => switch (key.toLowerCase()) {
+  'facebook' => 'Facebook', 'instagram' => 'Instagram', 'telegram' => 'Telegram',
+  'tiktok' => 'TikTok', 'youtube' => 'YouTube', 'x' => 'X',
+  'linkedin' => 'LinkedIn', 'website' => 'Website', _ => key,
+};
 
 String pgPrivacySummary() {
   const summaries = <String,String>{
@@ -398,13 +419,13 @@ class _PromptLibraryState extends State<PromptLibrary> {
   }
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
-    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: CircleAvatar(backgroundColor: Colors.white, child: promptGoLogo(context, size: 42))),
+    UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: Padding(padding: const EdgeInsets.all(5), child: promptGoLogo(context, size: 52))),
     ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
     const Divider(),
     ListTile(leading: const Icon(Icons.person_outline), title: Text(pg('Creator info')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const CreatorInfoPage())); }),
-    ListTile(leading: const Icon(Icons.star_outline), title: Text(pg('Rate app')), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://play.google.com/store/search?q=PromptGo&c=apps'), mode: LaunchMode.externalApplication); }),
+    ListTile(leading: const Icon(Icons.star_outline), title: const Text('Star on GitHub'), subtitle: const Text('Support PromptGo on GitHub'), onTap: () async { Navigator.pop(context); await launchUrl(Uri.parse('https://github.com/safisafi58/test'), mode: LaunchMode.externalApplication); }),
     ListTile(leading: const Icon(Icons.share_outlined), title: Text(pg('Share app')), onTap: () { Navigator.pop(context); Share.share('Try PromptGo — an AI prompt library for creative ideas.'); }),
     ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage())); }),
     ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: const Text('Privacy Policy'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyPage())); }),
@@ -470,14 +491,24 @@ class CreatorInfoPage extends StatelessWidget {
       final email = (d['email'] ?? 'noorrahmansayede07@gmail.com').toString();
       final whatsapp = (d['whatsapp'] ?? '+93744864493').toString();
       final extra = (d['extraContact'] ?? '').toString();
+      final socialRaw = d['socialLinks'];
+      final socials = socialRaw is Map ? Map<dynamic, dynamic>.from(socialRaw) : <dynamic, dynamic>{};
       return ListView(padding: const EdgeInsets.all(22), children: [
         Center(child: ClipRRect(borderRadius: BorderRadius.circular(100), child: image.isNotEmpty ? Image.network(image, width: 150, height: 150, fit: BoxFit.cover, errorBuilder: (_,__,___) => Image.asset('assets/admin.JPG',width:150,height:150,fit:BoxFit.cover)) : Image.asset('assets/admin.JPG', width: 150, height: 150, fit: BoxFit.cover))),
         const SizedBox(height: 18),
         Center(child: Text(name, style: const TextStyle(fontSize: 27, fontWeight: FontWeight.w900))),
         const SizedBox(height: 14), Text(bio),
         const SizedBox(height: 24),
-        if (email.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: Text(pgContact('Email')), subtitle: Text(email), onTap: () => launchUrl(Uri.parse('mailto:$email')))),
-        if (whatsapp.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: Text(pgContact('WhatsApp')), subtitle: Text(whatsapp), onTap: () => launchUrl(Uri.parse('https://wa.me/${whatsapp.replaceAll(RegExp(r'[^0-9]'), '')}'), mode: LaunchMode.externalApplication))),
+        if (email.isNotEmpty && d['showEmail'] != false) Card(child: ListTile(leading: const Icon(Icons.email_outlined), title: Text(pgContact('Email')), subtitle: Text(email), onTap: () => launchUrl(Uri.parse('mailto:$email')))),
+        if (whatsapp.isNotEmpty && d['showWhatsApp'] != false) Card(child: ListTile(leading: const Icon(Icons.chat_outlined), title: Text(pgContact('WhatsApp')), subtitle: Text(whatsapp), onTap: () => launchUrl(Uri.parse('https://wa.me/${whatsapp.replaceAll(RegExp(r'[^0-9]'), '')}'), mode: LaunchMode.externalApplication))),
+        ...socials.entries.where((entry) => entry.value is Map && (entry.value as Map)['enabled'] == true).map((entry) {
+          final data = Map<dynamic, dynamic>.from(entry.value as Map);
+          final url = (data['url'] ?? '').toString().trim();
+          final uri = Uri.tryParse(url);
+          if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http') || uri.host.isEmpty) return const SizedBox.shrink();
+          final key = entry.key.toString();
+          return Card(child: ListTile(leading: Icon(promptGoSocialIcon(key)), title: Text(promptGoSocialLabel(key)), subtitle: Text(url), onTap: () => launchUrl(uri, mode: LaunchMode.externalApplication)));
+        }),
         if (extra.isNotEmpty) Card(child: ListTile(leading: const Icon(Icons.contact_phone_outlined), title: Text(pgContact('Other contact')), subtitle: Text(extra))),
       ]);
     },
@@ -527,83 +558,96 @@ class _PromptDetailPageState extends State<PromptDetailPage> {
 }
 
 
-class OnlineGate extends StatelessWidget {
+class OnlineGate extends StatefulWidget {
   const OnlineGate({super.key});
+  @override
+  State<OnlineGate> createState() => _OnlineGateState();
+}
+
+class _OnlineGateState extends State<OnlineGate> {
+  late Future<bool> _connectionCheck;
+  Future<Map<String, dynamic>?>? _updateCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectionCheck = _checkConnection();
+  }
+
+  Future<bool> _checkConnection() async {
+    try {
+      final dns = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 6));
+      if (dns.isEmpty || dns.first.rawAddress.isEmpty) return false;
+      await FirebaseDatabase.instance.ref('.info/connected').onValue
+          .firstWhere((event) => event.snapshot.value == true)
+          .timeout(const Duration(seconds: 10));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Future<Map<String, dynamic>?> _requiredUpdate() async {
     try {
-      final snapshot = await FirebaseDatabase.instance.ref('appUpdate').get();
+      final snapshot = await FirebaseDatabase.instance.ref('appUpdate').get().timeout(const Duration(seconds: 10));
       if (snapshot.value is! Map) return null;
-
       final data = Map<dynamic, dynamic>.from(snapshot.value as Map);
       if (data['forceUpdate'] != true) return null;
-
       final packageInfo = await PackageInfo.fromPlatform();
       final latestVersion = (data['version'] ?? '1.0.0').toString();
-      if (comparePromptGoVersions(packageInfo.version, latestVersion) >= 0) {
-        return null;
-      }
-
+      if (comparePromptGoVersions(packageInfo.version, latestVersion) >= 0) return null;
       return data.map((key, value) => MapEntry(key.toString(), value));
     } catch (_) {
       return null;
     }
   }
 
+  void _retry() {
+    setState(() {
+      _updateCheck = null;
+      _connectionCheck = _checkConnection();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<DatabaseEvent>(
-      stream: FirebaseDatabase.instance.ref('.info/connected').onValue,
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return FutureBuilder<bool>(
+      future: _connectionCheck,
       builder: (context, connection) {
-        final isConnected = connection.data?.snapshot.value == true;
-        if (!isConnected) {
-          return const Scaffold(
+        if (connection.connectionState != ConnectionState.done) {
+          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        }
+        if (connection.data != true) {
+          return Scaffold(
             body: Center(
-              child: Padding(
-                padding: EdgeInsets.all(28),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.wifi_off_rounded, size: 64),
-                    SizedBox(height: 16),
-                    Text(
-                      'Internet connection required',
-                      style: TextStyle(fontSize: 21, fontWeight: FontWeight.w900),
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'PromptGo works online only. Connect to the internet and try again.',
-                      textAlign: TextAlign.center,
-                    ),
-                    SizedBox(height: 20),
-                    CircularProgressIndicator(),
+                    Image.asset(dark ? 'assets/nol.png' : 'assets/nod.png', height: 210, fit: BoxFit.contain),
+                    const SizedBox(height: 18),
+                    const Text('Internet connection required', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900), textAlign: TextAlign.center),
+                    const SizedBox(height: 10),
+                    const Text('PromptGo works online only. Connect to the internet, then tap Retry.', textAlign: TextAlign.center),
+                    const SizedBox(height: 22),
+                    FilledButton.icon(onPressed: _retry, icon: const Icon(Icons.refresh), label: const Text('Retry connection')),
                   ],
                 ),
               ),
             ),
           );
         }
-
+        _updateCheck ??= _requiredUpdate();
         return FutureBuilder<Map<String, dynamic>?>(
-          future: _requiredUpdate(),
+          future: _updateCheck,
           builder: (context, update) {
             if (update.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (update.hasError) {
-              return const Scaffold(
-                body: Center(
-                  child: Text('Could not check app version. Please reconnect.'),
-                ),
-              );
+              return const Scaffold(body: Center(child: CircularProgressIndicator()));
             }
             final requiredUpdate = update.data;
-            if (requiredUpdate != null) {
-              return ForceUpdatePage(update: requiredUpdate);
-            }
+            if (requiredUpdate != null) return ForceUpdatePage(update: requiredUpdate);
             return const PromptLibrary();
           },
         );
@@ -632,7 +676,7 @@ class ForceUpdatePage extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.system_update_alt_rounded, size: 76),
+                Image.asset(Theme.of(context).brightness == Brightness.dark ? 'assets/upl.png' : 'assets/upd.png', height: 190, fit: BoxFit.contain),
                 const SizedBox(height: 18),
                 const Text(
                   'Update required',
@@ -673,46 +717,116 @@ class ForceUpdatePage extends StatelessWidget {
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: Text(pg('Settings'))), body: ListView(padding: const EdgeInsets.all(16), children: [
-    Text(pg('Language'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-    const SizedBox(height: 8),
-    ...promptGoLanguages.map((language) => RadioListTile<String>(value: language, groupValue: promptGoLanguage.value, title: Text(language), onChanged: (value) async { if (value != null) { promptGoLanguage.value=value; final p=await SharedPreferences.getInstance(); await p.setString('promptgo_language',value); } })),
-    const Divider(height: 30),
-    Text(pg('Appearance'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-    for (final item in <MapEntry<ThemeMode,String>>[MapEntry(ThemeMode.system,pg('Automatic')),MapEntry(ThemeMode.light,pg('Light')),MapEntry(ThemeMode.dark,pg('Dark'))])
-      RadioListTile<ThemeMode>(value:item.key,groupValue:promptGoThemeMode.value,title:Text(item.value),onChanged:(v) async { if(v!=null){promptGoThemeMode.value=v; final p=await SharedPreferences.getInstance(); await p.setString('promptgo_theme',v.name);} }),
-    const Divider(height: 30),
-    const Text('Accent color', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-    const SizedBox(height: 12),
-    Wrap(spacing: 14, children: [
-      for (final c in <Color>[const Color(0xff6750a4),const Color(0xff1565c0),const Color(0xff00897b),const Color(0xffef6c00)])
-        GestureDetector(onTap: () async { promptGoAccent.value=c; final p=await SharedPreferences.getInstance(); await p.setInt('promptgo_accent',c.value); }, child: CircleAvatar(radius: 23, backgroundColor:c, child: promptGoAccent.value.value==c.value?const Icon(Icons.check,color:Colors.white):null)),
-    ]),
-    const SizedBox(height: 24),
-    ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: Text(pgContact('Privacy Policy')), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const PrivacyPolicyPage()))),
-    ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () => Navigator.push(context,MaterialPageRoute(builder:(_)=>const AboutPromptGoPage()))),
-  ]));
+  Widget build(BuildContext context) {
+    final accentOptions = <MapEntry<String, Color>>[
+      const MapEntry('Purple', Color(0xff6750a4)),
+      const MapEntry('Blue', Color(0xff1565c0)),
+      const MapEntry('Teal', Color(0xff00897b)),
+      const MapEntry('Orange', Color(0xffef6c00)),
+    ];
+    return Scaffold(
+      appBar: AppBar(title: Text(pg('Settings'))),
+      body: ListView(
+        padding: const EdgeInsets.all(18),
+        children: [
+          Text(pg('Language'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          const SizedBox(height: 9),
+          DropdownButtonFormField<String>(
+            initialValue: promptGoLanguage.value,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: pg('Choose language'), border: const OutlineInputBorder()),
+            items: promptGoLanguages.map((language) => DropdownMenuItem(value: language, child: Text(language))).toList(),
+            onChanged: (value) async {
+              if (value == null) return;
+              promptGoLanguage.value = value;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('promptgo_language', value);
+            },
+          ),
+          const SizedBox(height: 26),
+          Text(pg('Appearance'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          const SizedBox(height: 9),
+          DropdownButtonFormField<ThemeMode>(
+            initialValue: promptGoThemeMode.value,
+            isExpanded: true,
+            decoration: InputDecoration(labelText: pg('Choose appearance'), border: const OutlineInputBorder()),
+            items: [
+              DropdownMenuItem(value: ThemeMode.system, child: Text(pg('Automatic'))),
+              DropdownMenuItem(value: ThemeMode.light, child: Text(pg('Light'))),
+              DropdownMenuItem(value: ThemeMode.dark, child: Text(pg('Dark'))),
+            ],
+            onChanged: (value) async {
+              if (value == null) return;
+              promptGoThemeMode.value = value;
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('promptgo_theme', value.name);
+            },
+          ),
+          const SizedBox(height: 26),
+          const Text('Accent color', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+          const SizedBox(height: 9),
+          DropdownButtonFormField<int>(
+            initialValue: promptGoAccent.value.value,
+            isExpanded: true,
+            decoration: const InputDecoration(labelText: 'Choose accent color', border: OutlineInputBorder()),
+            items: accentOptions.map((entry) => DropdownMenuItem(
+              value: entry.value.value,
+              child: Row(children: [
+                CircleAvatar(radius: 10, backgroundColor: entry.value),
+                const SizedBox(width: 10),
+                Text(entry.key),
+              ]),
+            )).toList(),
+            onChanged: (value) async {
+              if (value == null) return;
+              promptGoAccent.value = Color(value);
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setInt('promptgo_accent', value);
+            },
+          ),
+          const SizedBox(height: 24),
+          ListTile(leading: const Icon(Icons.privacy_tip_outlined), title: Text(pgContact('Privacy Policy')), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()))),
+          ListTile(leading: const Icon(Icons.info_outline), title: Text(pg('About')), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutPromptGoPage()))),
+        ],
+      ),
+    );
+  }
 }
 
 class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
+
+  Widget _section(String heading, String body) => Padding(
+    padding: const EdgeInsets.only(top: 18),
+    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(heading, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 6),
+      Text(body, style: const TextStyle(height: 1.55)),
+    ]),
+  );
+
   @override
-  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Privacy Policy')), body: ListView(padding: const EdgeInsets.all(20), children: const [
-    Text('PromptGo Privacy Policy', style: TextStyle(fontSize: 24,fontWeight:FontWeight.w900)),
-    SizedBox(height: 14),
-    Text('PromptGo connects to Firebase to retrieve prompt posts, creator information and update information. The app requires an internet connection and does not offer offline browsing.'),
-    SizedBox(height: 12),
-    Text('Data: Favorites and appearance preferences are stored on your device. Firebase may process technical data required to provide database and notification services.'),
-    SizedBox(height: 12),
-    Text('Notifications: PromptGo may ask permission to send notifications about new prompts. You can disable notifications at any time in Android system settings.'),
-    SizedBox(height: 12),
-    Text('Contacts: If you choose to contact the creator, your device opens the relevant email or messaging app. PromptGo does not send messages on your behalf.'),
-    SizedBox(height: 12),
-    Text('Children: PromptGo is not designed to collect personal information from children.'),
-    SizedBox(height: 12),
-    Text('Changes: This policy may be updated when app features change.'),
-    SizedBox(height: 12),
-    Text('Contact: noorrahmansayede07@gmail.com'),
-  ]));
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Privacy Policy')),
+    body: ListView(padding: const EdgeInsets.all(20), children: [
+      const Text('PromptGo Privacy Policy', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+      const SizedBox(height: 8),
+      const Text('Effective date: November 4, 2026'),
+      _section('1. About PromptGo', 'PromptGo is an online AI prompt library. You can browse prompt posts, save favorites on your device, receive optional new-post notifications, and view creator information. PromptGo does not require you to create an account.'),
+      _section('2. Information and data', 'Favorites, selected language, theme, and accent-color preferences are stored locally on your device. When notifications are enabled, Firebase Cloud Messaging may process a device registration token so that new-post notifications can be delivered. Firebase services may also process technical connection, delivery, and diagnostic information needed to operate the database and notifications. PromptGo does not ask for your precise location, contacts, photos, or microphone access for ordinary browsing.'),
+      _section('3. How data is used', 'Data is used to display prompt content and creator details from Firebase Realtime Database, check whether an app update is required, remember your local preferences, and deliver notifications if you allow them. PromptGo does not currently use in-app advertising or third-party analytics SDKs.'),
+      _section('4. Service providers and sharing', 'PromptGo uses Google Firebase services, including Firebase Realtime Database and Firebase Cloud Messaging. These services are provided by Google and process information under Google and Firebase terms and privacy documentation. PromptGo does not sell personal information. If you tap an email, WhatsApp, website, or social-media link, your device opens that third-party service; that service then handles your information under its own privacy policy. Prompt images may be hosted on external websites and are retrieved from those hosts when displayed.'),
+      _section('5. Retention and deletion', 'Favorites and preferences remain on your device until you clear the app data or uninstall PromptGo. Notification delivery data is handled by Firebase according to its service operation and retention rules. PromptGo does not maintain a user account in the app. For questions or requests concerning information handled by the developer, contact the email address below.'),
+      _section('6. Security', 'PromptGo uses HTTPS connections for supported online services. No internet transmission or storage system can be guaranteed to be completely secure, but access to the app database and administrative tools is restricted by the project security configuration.'),
+      _section('7. Children', 'PromptGo is a general-purpose prompt library and is not designed to knowingly collect personal information from children under 13. If you believe a child has provided personal information to the developer, contact us so the matter can be reviewed.'),
+      _section('8. Your choices', 'You can change notification permissions in Android settings, clear locally stored app data, or uninstall the app. You can choose whether to open any creator or social-media contact link.'),
+      _section('9. Changes to this policy', 'This policy may be updated if PromptGo features, data practices, or legal requirements change. The latest effective date will be shown in this policy.'),
+      _section('10. Contact', 'Developer: Sayed Safi\nEmail: noorrahmansayede07@gmail.com'),
+      const SizedBox(height: 20),
+      const Text('Google Privacy Policy: https://policies.google.com/privacy'),
+      const Text('Firebase Privacy and Security: https://firebase.google.com/support/privacy'),
+    ]),
+  );
 }
