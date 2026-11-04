@@ -21,6 +21,7 @@ const creatorSocialPlatforms = <String>['facebook', 'instagram', 'telegram', 'ti
 
 const promptCategories = <String>[
   'Video Prompt', 'Kids', 'DP Maker', 'Game', 'Cinematic', 'Anime & Cartoon',
+  'Drawing and sketch', 'Photo Editing', 'Logo Design', 'Products',
 ];
 
 Future<void> main() async {
@@ -313,6 +314,7 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
   final link = TextEditingController();
   final title = TextEditingController();
   String category = promptCategories.first;
+  bool trending = false;
   bool busy = false;
   final formKey = GlobalKey<FormState>();
 
@@ -362,6 +364,13 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                   decoration: const InputDecoration(labelText: 'Category'),
                   items: promptCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (v) { if (v != null) setDialogState(() => category = v); },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Mark as Trending'),
+                  subtitle: const Text('Show this post in the Trending section'),
+                  value: trending,
+                  onChanged: (v) => setDialogState(() => trending = v),
                 ),
                 if (busy) const Padding(padding: EdgeInsets.only(top: 16), child: LinearProgressIndicator()),
               ]),
@@ -415,7 +424,7 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                   'imageUrl': photoUrl,
                   'sourceType': 'telegram',
                   'telegramUrl': link.text.trim(),
-                  'isTrending': false,
+                  'isTrending': trending,
                   'createdAt': ServerValue.timestamp,
                   'updatedAt': ServerValue.timestamp,
                 };
