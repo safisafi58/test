@@ -20,10 +20,7 @@ exports.notifyNewPrompt = onValueCreated(
         promptId: String(event.params.promptId),
         type: "new_prompt",
       },
-      android: {
-        priority: "high",
-        notification: { channelId: "promptgo_posts" },
-      },
+      android: { priority: "high" },
     });
   }
 );
