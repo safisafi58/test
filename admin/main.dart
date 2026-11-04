@@ -394,7 +394,7 @@ Future<void> addTelegramPrompt(BuildContext context, DatabaseReference ref) asyn
                 final caption = (textElement?.text ?? '').trim();
                 final photoElement = postElement.querySelector('.tgme_widget_message_photo_wrap');
                 final photoStyle = photoElement?.attributes['style'] ?? '';
-                final photoMatch = RegExp("url\\(['\\"]?(.*?)['\\"]?\\)").firstMatch(photoStyle);
+                final photoMatch = RegExp(r"""url\(['"]?(.*?)['"]?\)""").firstMatch(photoStyle);
                 var photoUrl = photoMatch?.group(1) ?? '';
                 if (photoUrl.isEmpty) {
                   photoUrl = postElement.querySelector('img.tgme_widget_message_photo')?.attributes['src'] ?? '';
