@@ -195,6 +195,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
   void initState() {
     super.initState();
     _loadFavorites();
+    FirebaseMessaging.instance.subscribeToTopic('promptgo_new_posts').catchError((_) {});
     _updateSubscription = FirebaseDatabase.instance.ref('appUpdate').onValue.listen((event) async {
       if (_updateScreenShown || !mounted || event.snapshot.value is! Map) return;
       final raw = Map<dynamic,dynamic>.from(event.snapshot.value as Map);
