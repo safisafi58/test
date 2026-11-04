@@ -44,7 +44,7 @@ ThemeData adminPromptGoTheme({required bool dark}) {
     colorScheme: base,
     scaffoldBackgroundColor: dark ? const Color(0xff090b18) : const Color(0xfff2f1fb),
     cardColor: glass,
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: glass,
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
