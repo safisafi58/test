@@ -417,7 +417,7 @@ Future<void> editAppUpdate(BuildContext context, Map<dynamic,dynamic> old) async
   await showDialog<void>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
     title:const Text('User app update'),
     content:SizedBox(width:460,child:SingleChildScrollView(child:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[
-      TextFormField(controller:version,decoration:const InputDecoration(labelText:'New app version (e.g. 1.0.2)'),validator:(v)=>v==null||!RegExp(r'^\d+\.\d+\.\d+
+      TextFormField(controller:version,decoration:const InputDecoration(labelText:'New app version (e.g. 1.0.2)'),validator:(v){final parts=(v??'').trim().split('.');return parts.length!=3||parts.any((part)=>part.isEmpty||int.tryParse(part)==null)?'Use format 1.0.2':null;}),
       TextFormField(controller:apk,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Direct APK HTTPS URL'),validator:(v)=>v==null||!v.trim().startsWith('https://')?'Enter an HTTPS APK URL':null),
       TextFormField(controller:notes,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Release notes')),
       SwitchListTile(contentPadding:EdgeInsets.zero,value:force,onChanged:(v)=>setDialog(()=>force=v),title:const Text('Force update (block old versions)')),
