@@ -136,6 +136,7 @@ const firebaseOptions = FirebaseOptions(
 const promptCategories = <String>[
   'All', 'New', 'Trending', 'Video Prompt', 'Kids', 'DP Maker',
   'Game', 'Cinematic', 'Anime & Cartoon',
+  'Drawing and sketch', 'Photo Editing', 'Logo Design', 'Products',
 ];
 
 Future<void> main() async {
@@ -446,7 +447,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
                     final imageUrl = (p['imageUrl'] ?? '').toString();
                     return Card(clipBehavior: Clip.antiAlias, child: InkWell(onTap: () => _showDetails(context, p), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Expanded(child: Stack(fit: StackFit.expand, children: [
-                        if (imageUrl.isNotEmpty) GestureDetector(onTap: () => _viewPromptImage(context, imageUrl), child: Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, alignment: Alignment.center, child: Image.network(imageUrl, width: double.infinity, height: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined)))) else Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.image_outlined, size: 42)),
+                        if (imageUrl.isNotEmpty) Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, alignment: Alignment.center, child: Image.network(imageUrl, width: double.infinity, height: double.infinity, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_outlined))) else Container(color: Theme.of(context).colorScheme.surfaceContainerHighest, child: const Icon(Icons.image_outlined, size: 42)),
                         Positioned(right: 4, top: 4, child: CircleAvatar(backgroundColor: Colors.black45, radius: 17, child: IconButton(padding: EdgeInsets.zero, iconSize: 18, onPressed: () => _toggleFavorite(id), icon: Icon(favorite ? Icons.favorite : Icons.favorite_border, color: Colors.white)))),
                       ])),
                       Padding(padding: const EdgeInsets.fromLTRB(10, 9, 10, 10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(p['title'] as String, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)), const SizedBox(height: 5), Text(p['category'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: Theme.of(context).colorScheme.primary))])),
