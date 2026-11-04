@@ -88,7 +88,7 @@ String pgContact(String key) {
 
 IconData promptGoSocialIcon(String key) {
   switch (key.toLowerCase()) {
-    case 'facebook': return Icons.facebook_rounded;
+    case 'facebook': return Icons.facebook;
     case 'instagram': return Icons.camera_alt_outlined;
     case 'telegram': return Icons.send_rounded;
     case 'tiktok': return Icons.music_note_rounded;
