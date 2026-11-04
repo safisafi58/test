@@ -417,7 +417,26 @@ Future<void> editAppUpdate(BuildContext context, Map<dynamic,dynamic> old) async
   await showDialog<void>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
     title:const Text('User app update'),
     content:SizedBox(width:460,child:SingleChildScrollView(child:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[
-      TextFormField(controller:version,decoration:const InputDecoration(labelText:'New app version (e.g. 1.0.2)'),validator:(v)=>v==null||!RegExp(r'^\\d+\\.\\d+\\.\\d+$').hasMatch(v.trim())?'Use format 1.0.2':null),
+      TextFormField(controller:version,decoration:const InputDecoration(labelText:'New app version (e.g. 1.0.2)'),validator:(v)=>v==null||!RegExp(r'^\d+\.\d+\.\d+.hasMatch(v.trim())?'Use format 1.0.2':null),
+      TextFormField(controller:apk,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Direct APK HTTPS URL'),validator:(v)=>v==null||!v.trim().startsWith('https://')?'Enter an HTTPS APK URL':null),
+      TextFormField(controller:notes,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Release notes')),
+      SwitchListTile(contentPadding:EdgeInsets.zero,value:force,onChanged:(v)=>setDialog(()=>force=v),title:const Text('Force update (block old versions)')),
+    ])))),
+    actions:[
+      TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+      FilledButton(onPressed:() async {
+        if(!key.currentState!.validate()) return;
+        try {
+          await FirebaseDatabase.instance.ref('appUpdate').set({'version':version.text.trim(),'apkUrl':apk.text.trim(),'releaseNotes':notes.text.trim(),'forceUpdate':force,'updatedAt':ServerValue.timestamp});
+          if(ctx.mounted) Navigator.pop(ctx);
+          if(context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Update settings published.')));
+        } catch(e) { if(ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Publish failed: $e'))); }
+      },child:const Text('Publish')),
+    ],
+  )));
+  version.dispose();apk.dispose();notes.dispose();
+}
+).hasMatch(v.trim())?'Use format 1.0.2':null),
       TextFormField(controller:apk,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Direct APK HTTPS URL'),validator:(v)=>v==null||!v.trim().startsWith('https://')?'Enter an HTTPS APK URL':null),
       TextFormField(controller:notes,minLines:2,maxLines:4,decoration:const InputDecoration(labelText:'Release notes')),
       SwitchListTile(contentPadding:EdgeInsets.zero,value:force,onChanged:(v)=>setDialog(()=>force=v),title:const Text('Force update (block old versions)')),
