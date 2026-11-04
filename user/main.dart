@@ -59,7 +59,7 @@ class _PromptGoSplashState extends State<PromptGoSplash> {
   }
   @override
   Widget build(BuildContext context) => Scaffold(body: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-    Icon(Icons.auto_awesome_rounded, size: 78, color: Theme.of(context).colorScheme.primary),
+    Image.asset('assets/sp.png', width: 180, height: 180, fit: BoxFit.contain),
     const SizedBox(height: 12),
     const Text('PromptGo', style: TextStyle(fontSize: 34, fontWeight: FontWeight.w900)),
     const SizedBox(height: 6),
