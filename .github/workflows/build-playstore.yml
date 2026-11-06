@@ -62,7 +62,7 @@ jobs:
           if p.exists():
               s = p.read_text()
               if "keystoreProperties" not in s:
-                  s = "import java.util.Properties\\n\\n" + s
+                  s = "import java.util.Properties\n\n" + s
                   props = """val keystoreProperties = Properties()
           val keystorePropertiesFile = rootProject.file("key.properties")
           if (keystorePropertiesFile.exists()) {
@@ -70,7 +70,7 @@ jobs:
           }
 
           """
-                  s, count = re.subn(r"(plugins\\s*\\{[\\s\\S]*?\\}\\s*)", lambda m: m.group(1) + "\\n" + props, s, count=1)
+                  s, count = re.subn(r"(plugins\s*\{[\s\S]*?\}\s*)", lambda m: m.group(1) + "\n" + props, s, count=1)
                   if count != 1:
                       raise SystemExit("Could not locate Gradle plugins block")
                   signing = """    signingConfigs {
@@ -83,7 +83,7 @@ jobs:
               }
 
           """
-                  s = s.replace("android {", "android {\\n" + signing, 1)
+                  s = s.replace("android {", "android {\n" + signing, 1)
                   s = s.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
                   p.write_text(s)
           else:
@@ -106,7 +106,7 @@ jobs:
               }
 
           """
-                  s = s.replace('android {', 'android {\\n' + signing, 1)
+                  s = s.replace('android {', 'android {\n' + signing, 1)
                   s = s.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
                   p.write_text(s)
           PY
