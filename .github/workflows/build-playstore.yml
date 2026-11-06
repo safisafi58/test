@@ -60,7 +60,7 @@ jobs:
           if p.exists():
               s = p.read_text()
               if "keystoreProperties" not in s:
-                  s = s.replace("plugins {", "import java.util.Properties\\n\\nplugins {", 1)
+                  s = s.replace("plugins {", "import java.util.Properties\n\nplugins {", 1)
                   declarations = """val keystoreProperties = Properties()
           val keystorePropertiesFile = rootProject.file("key.properties")
           if (keystorePropertiesFile.exists()) {
@@ -68,7 +68,7 @@ jobs:
           }
 
           """
-                  s = s.replace("\\n}\\n\\nandroid {", "\\n}\\n\\n" + declarations + "android {", 1)
+                  s = s.replace("\n}\n\nandroid {", "\n}\n\n" + declarations + "android {", 1)
                   if "keystoreProperties" not in s:
                       raise SystemExit("Could not insert signing properties into Gradle Kotlin file")
                   s = s.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
