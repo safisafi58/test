@@ -39,6 +39,85 @@ jobs:
           cp user/main.dart user_app/lib/main.dart
           cp user/pubspec.yaml user_app/pubspec.yaml
           cp -r user/assets user_app/assets
+      - name: Prepare Play Store upload key
+        working-directory: user_app
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.PROMPTGO_KEYSTORE_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.PROMPTGO_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "Missing GitHub Secret PROMPTGO_KEYSTORE_PASSWORD"
+            exit 1
+          fi
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > upload-keystore.jks
+          else
+            keytool -genkeypair -v -keystore upload-keystore.jks -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias promptgo-upload -storepass "$KEYSTORE_PASSWORD" -keypass "$KEYSTORE_PASSWORD" -dname "CN=PromptGo, OU=Mobile, O=PromptGo, L=Unknown, ST=Unknown, C=DE"
+            base64 -w 0 upload-keystore.jks > upload-keystore.base64.txt
+          fi
+          cat > key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=promptgo-upload
+          storeFile=upload-keystore.jks
+          EOF
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("android/app/build.gradle.kts")
+          if p.exists():
+              s = p.read_text()
+              if "keystoreProperties" not in s:
+                  s = 'import java.util.Properties\\n\\nval keystoreProperties = Properties()\\nval keystorePropertiesFile = rootProject.file("key.properties")\\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(keystorePropertiesFile.inputStream()) }\\n\\n' + s
+                  s = s.replace('android {', '''android {
+              signingConfigs {
+                  create("release") {
+                      keyAlias = keystoreProperties["keyAlias"] as String
+                      keyPassword = keystoreProperties["keyPassword"] as String
+                      storeFile = file(keystoreProperties["storeFile"] as String)
+                      storePassword = keystoreProperties["storePassword"] as String
+                  }
+              }''', 1)
+                  s = s.replace('signingConfig = signingConfigs.getByName("debug")', 'signingConfig = signingConfigs.getByName("release")')
+                  p.write_text(s)
+          else:
+              p = Path("android/app/build.gradle")
+              s = p.read_text()
+              if "keystoreProperties" not in s:
+                  s = "def keystoreProperties = new Properties()\\ndef keystorePropertiesFile = rootProject.file('key.properties')\\nif (keystorePropertiesFile.exists()) { keystoreProperties.load(new FileInputStream(keystorePropertiesFile)) }\\n\\n" + s
+                  s = s.replace('android {', '''android {
+              signingConfigs {
+                  release {
+                      keyAlias keystoreProperties['keyAlias']
+                      keyPassword keystoreProperties['keyPassword']
+                      storeFile file(keystoreProperties['storeFile'])
+                      storePassword keystoreProperties['storePassword']
+                  }
+              }''', 1)
+                  s = s.replace('signingConfig signingConfigs.debug', 'signingConfig signingConfigs.release')
+                  p.write_text(s)
+          PY
+      - name: Build signed PromptGo User AAB
+        working-directory: user_app
+        run: flutter build appbundle --release
+      - name: Package Play Store signing files
+        if: ${{ !secrets.PROMPTGO_KEYSTORE_BASE64 }}
+        working-directory: user_app
+        run: |
+          cp upload-keystore.jks ../PromptGo-Upload-Key.jks
+          cp upload-keystore.base64.txt ../PromptGo-Upload-Key.base64.txt
+      - name: Upload signed Play Store bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-Play-Store-AAB
+          path: user_app/build/app/outputs/bundle/release/app-release.aab
+      - name: Upload first-time upload key backup
+        if: ${{ !secrets.PROMPTGO_KEYSTORE_BASE64 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-Upload-Key-Backup
+          path: |
+            PromptGo-Upload-Key.jks
+            PromptGo-Upload-Key.base64.txt
       - name: Build PromptGo User
         working-directory: user_app
         run: flutter pub get && dart run flutter_launcher_icons && flutter analyze --no-fatal-infos --no-fatal-warnings && flutter build apk --release
