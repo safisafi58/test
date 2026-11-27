@@ -1,4 +1,5 @@
 name: Build PromptGo APKs and AABs
+# Builds separate Admin and User APK and Play Store AAB packages.
 
 on:
   workflow_dispatch:
