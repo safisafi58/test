@@ -30,21 +30,56 @@ class PromptGoAds with WidgetsBindingObserver {
   DateTime? _appOpenLoadedAt;
   DateTime? _lastInterstitialAt;
   bool _initialized = false;
+  bool _consentFinished = false;
+  final Completer<bool> _ready = Completer<bool>();
+  Future<bool> get ready => _ready.future;
   bool _showingAppOpen = false;
   bool _wasBackgrounded = false;
 
   Future<void> initialize() async {
-    if (_initialized || !Platform.isAndroid) return;
+    if (_initialized) return;
     _initialized = true;
+    if (!Platform.isAndroid) {
+      _ready.complete(false);
+      return;
+    }
     try {
       await MobileAds.instance.initialize();
+      ConsentInformation.instance.requestConsentInfoUpdate(
+        ConsentRequestParameters(),
+        () {
+          ConsentForm.loadAndShowConsentFormIfRequired((error) {
+            if (error != null) debugPrint('PromptGo consent form: $error');
+            _finishConsent();
+          });
+        },
+        (error) {
+          debugPrint('PromptGo consent update failed: $error');
+          _finishConsent();
+        },
+      );
+    } catch (e) {
+      debugPrint('PromptGo AdMob initialization failed: $e');
+      _finishConsent();
+    }
+  }
+
+  Future<void> _finishConsent() async {
+    if (_consentFinished) return;
+    _consentFinished = true;
+    var allowed = false;
+    try {
+      allowed = await ConsentInformation.instance.canRequestAds();
+    } catch (e) {
+      debugPrint('PromptGo consent status unavailable: $e');
+    }
+    if (allowed) {
       WidgetsBinding.instance.addObserver(this);
       _loadInterstitial();
       _loadRewarded();
       _loadAppOpen();
-    } catch (e) {
-      debugPrint('PromptGo AdMob initialization failed: $e');
     }
+    if (!_ready.isCompleted) _ready.complete(allowed);
   }
 
   void _loadInterstitial() {
@@ -103,14 +138,13 @@ class PromptGoAds with WidgetsBindingObserver {
     );
   }
 
-  Future<bool> showRewarded({required void Function(RewardItem reward) onEarned}) async {
+  void showRewarded({required void Function(RewardItem reward) onEarned}) {
     final ad = _rewarded;
     if (ad == null) {
       _loadRewarded();
-      return false;
+      return;
     }
     _rewarded = null;
-    var earned = false;
     ad.fullScreenContentCallback = FullScreenContentCallback<RewardedAd>(
       onAdDismissedFullScreenContent: (ad) {
         ad.dispose();
@@ -122,10 +156,8 @@ class PromptGoAds with WidgetsBindingObserver {
       },
     );
     ad.show(onUserEarnedReward: (_, reward) {
-      earned = true;
       onEarned(reward);
     });
-    return earned;
   }
 
   void _loadAppOpen() {
@@ -202,30 +234,34 @@ class _PromptGoBannerAdState extends State<PromptGoBannerAd> {
   @override
   void initState() {
     super.initState();
-    if (Platform.isAndroid) {
-      final ad = BannerAd(
-        adUnitId: PromptGoAds.bannerId,
-        request: const AdRequest(),
-        size: AdSize.banner,
-        listener: BannerAdListener(
-          onAdLoaded: (ad) {
-            if (!mounted) {
-              ad.dispose();
-              return;
-            }
-            setState(() {
-              _banner = ad as BannerAd;
-              _loaded = true;
-            });
-          },
-          onAdFailedToLoad: (ad, error) {
+    PromptGoAds.instance.ready.then((allowed) {
+      if (allowed && mounted) _loadBanner();
+    });
+  }
+
+  void _loadBanner() {
+    final ad = BannerAd(
+      adUnitId: PromptGoAds.bannerId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        onAdLoaded: (ad) {
+          if (!mounted) {
             ad.dispose();
-            debugPrint('PromptGo banner failed: $error');
-          },
-        ),
-      );
-      ad.load();
-    }
+            return;
+          }
+          setState(() {
+            _banner = ad as BannerAd;
+            _loaded = true;
+          });
+        },
+        onAdFailedToLoad: (ad, error) {
+          ad.dispose();
+          debugPrint('PromptGo banner failed: $error');
+        },
+      ),
+    );
+    ad.load();
   }
 
   @override
@@ -1250,6 +1286,14 @@ class PrivacyPolicyPage extends StatelessWidget {
     appBar: AppBar(title: const Text('Privacy Policy')),
     body: ListView(padding: const EdgeInsets.all(20), children: [
       const Text('PromptGo Privacy Policy', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w900)),
+      Card(child: ListTile(
+        leading: const Icon(Icons.privacy_tip_outlined),
+        title: const Text('Advertising privacy choices'),
+        subtitle: const Text('Review or change your Google advertising consent choices.'),
+        onTap: () => ConsentForm.showPrivacyOptionsForm((error) {
+          if (error != null) debugPrint('PromptGo privacy options: $error');
+        }),
+      )),
       const SizedBox(height: 8),
       const Text('Effective date: November 4, 2026'),
       _section('1. About PromptGo', 'PromptGo is an online AI prompt library. You can browse prompt posts, save favorites on your device, receive optional new-post notifications, and view creator information. PromptGo does not require you to create an account.'),
