@@ -92,6 +92,19 @@ jobs:
           cp user/pubspec.yaml user_app/pubspec.yaml
           cp -r user/assets user_app/assets
 
+      - name: Add AdMob application ID
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          manifest = Path("user_app/android/app/src/main/AndroidManifest.xml")
+          content = manifest.read_text()
+          metadata = '        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-4662993198213260~4896060761"/>'
+          if "com.google.android.gms.ads.APPLICATION_ID" not in content:
+              content = content.replace("</application>", metadata + "\\n    </application>")
+          manifest.write_text(content)
+          PY
+
       - name: Build User APK
         working-directory: user_app
         run: |
