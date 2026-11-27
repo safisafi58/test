@@ -114,7 +114,7 @@ jobs:
           name: PromptGo-Play-Store-AAB
           path: user_app/build/app/outputs/bundle/release/app-release.aab
       - name: Upload first-time upload key backup
-        if: ${{ !secrets.PROMPTGO_KEYSTORE_BASE64 }}
+        if: steps.prepare_upload_key.outputs.generated_key == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: PromptGo-Upload-Key-Backup
