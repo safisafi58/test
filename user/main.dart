@@ -568,6 +568,7 @@ class _PromptLibraryState extends State<PromptLibrary> {
 
   Widget _buildDrawer(BuildContext context) => Drawer(child: SafeArea(child: ListView(padding: EdgeInsets.zero, children: [
     UserAccountsDrawerHeader(margin: EdgeInsets.zero, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, image: const DecorationImage(image: AssetImage('assets/caver.JPG'), fit: BoxFit.cover, colorFilter: ColorFilter.mode(Colors.black38, BlendMode.darken))), accountName: const Text('PromptGo', style: TextStyle(fontWeight: FontWeight.w900)), accountEmail: const Text('AI Prompt Library'), currentAccountPicture: Padding(padding: const EdgeInsets.all(5), child: promptGoLogo(context, size: 52))),
+    ListTile(leading: const Icon(Icons.short_text_rounded), title: const Text('Short Prompts'), subtitle: const Text('Quick prompts with one-tap copy'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const ShortPromptsPage())); }),
     ListTile(leading: const Icon(Icons.settings_outlined), title: Text(pg('Settings')), subtitle: Text(pg('Theme and app preferences')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.palette_outlined), title: Text(pg('Appearance')), subtitle: Text(pg('Light') + ' • ' + pg('Dark') + ' • ' + pg('Automatic')), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage())); }),
     ListTile(leading: const Icon(Icons.favorite_outline), title: Text(pg('Favorites')), onTap: () { Navigator.pop(context); setState(() => showFavoritesOnly = !showFavoritesOnly); }),
@@ -661,6 +662,30 @@ class CreatorInfoPage extends StatelessWidget {
       ]);
     },
   ));
+}
+
+
+class ShortPromptsPage extends StatelessWidget {
+ const ShortPromptsPage({super.key});
+ @override Widget build(BuildContext context){
+  final ref=FirebaseDatabase.instance.ref('shortPrompts');
+  return Scaffold(appBar:AppBar(title:const Text('Short Prompts')),body:StreamBuilder<DatabaseEvent>(stream:ref.onValue,builder:(context,snap){
+   if(snap.hasError)return Center(child:Text('Could not load short prompts: ${snap.error}'));
+   if(!snap.hasData)return const Center(child:CircularProgressIndicator());
+   final raw=snap.data!.snapshot.value;
+   if(raw is! Map||raw.isEmpty)return const Center(child:Text('No short prompts available yet.'));
+   final entries=raw.entries.where((e)=>e.value is Map).toList();
+   entries.sort((a,b){final aa=(a.value as Map)['createdAt'];final bb=(b.value as Map)['createdAt'];return (bb is num?bb:0).compareTo(aa is num?aa:0);});
+   return ListView.separated(padding:const EdgeInsets.all(14),itemCount:entries.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(context,i){
+    final d=Map<dynamic,dynamic>.from(entries[i].value as Map);final title=(d['title']??'Untitled').toString();final content=(d['content']??'').toString();
+    return Card(child:Padding(padding:const EdgeInsets.all(15),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+     Row(children:[Icon(Icons.bolt_rounded,color:Theme.of(context).colorScheme.primary),const SizedBox(width:8),Expanded(child:Text(title,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900)))]),
+     const SizedBox(height:10),SelectableText(content,style:const TextStyle(height:1.5,fontSize:14)),const SizedBox(height:12),
+     Align(alignment:Alignment.centerRight,child:FilledButton.tonalIcon(onPressed:content.isEmpty?null:()async{await Clipboard.setData(ClipboardData(text:content));if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Short prompt copied')));},icon:const Icon(Icons.copy_rounded,size:18),label:const Text('Copy prompt'))),
+    ])));
+   });
+  }));
+ }
 }
 
 class PromptImageViewer extends StatelessWidget {
