@@ -682,9 +682,13 @@ class ShortPromptsPage extends StatelessWidget {
    if(raw is! Map||raw.isEmpty)return const Center(child:Text('No short prompts available yet.'));
    final entries=raw.entries.where((e)=>e.value is Map).toList();
    entries.sort((a,b){final aa=(a.value as Map)['createdAt'];final bb=(b.value as Map)['createdAt'];return (bb is num?bb:0).compareTo(aa is num?aa:0);});
-   return ListView.separated(padding:const EdgeInsets.all(14),itemCount:entries.length,separatorBuilder:(_,__)=>const SizedBox(height:8),itemBuilder:(context,i){
-    final d=Map<dynamic,dynamic>.from(entries[i].value as Map);final title=(d['title']??'Untitled').toString();final content=(d['content']??'').toString();
-    return Card(child:Padding(padding:const EdgeInsets.all(15),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+   return ListView.separated(padding:const EdgeInsets.all(14),itemCount:entries.length,separatorBuilder:(_,__)=>const SizedBox(height:10),itemBuilder:(context,i){
+    final d=Map<dynamic,dynamic>.from(entries[i].value as Map);final title=(d['title']??'Untitled').toString();final content=(d['content']??'').toString();final imageUrl=(d['imageUrl']??'').toString();
+    return Card(clipBehavior:Clip.antiAlias,child:Padding(padding:const EdgeInsets.all(14),child:Column(crossAxisAlignment:CrossAxisAlignment.stretch,children:[
+     if(imageUrl.startsWith('http')) ...[
+      GestureDetector(onTap:()=>Navigator.push(context,MaterialPageRoute(builder:(_)=>PromptImageViewer(imageUrl:imageUrl))),child:ClipRRect(borderRadius:BorderRadius.circular(12),child:Image.network(imageUrl,height:185,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox(height:100,child:Center(child:Icon(Icons.broken_image_outlined)))))),
+      const SizedBox(height:12),
+     ],
      Row(children:[Icon(Icons.bolt_rounded,color:Theme.of(context).colorScheme.primary),const SizedBox(width:8),Expanded(child:Text(title,style:const TextStyle(fontSize:17,fontWeight:FontWeight.w900)))]),
      const SizedBox(height:10),SelectableText(content,style:const TextStyle(height:1.5,fontSize:14)),const SizedBox(height:12),
      Align(alignment:Alignment.centerRight,child:FilledButton.tonalIcon(onPressed:content.isEmpty?null:()async{await Clipboard.setData(ClipboardData(text:content));if(context.mounted)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:Text('Short prompt copied')));},icon:const Icon(Icons.copy_rounded,size:18),label:const Text('Copy prompt'))),
