@@ -699,25 +699,51 @@ class AdminShortPromptsPage extends StatelessWidget {
  Future<void> _edit(BuildContext context, DatabaseReference ref, {String? id, Map<dynamic,dynamic>? old}) async {
   final title=TextEditingController(text:(old?['title']??'').toString());
   final content=TextEditingController(text:(old?['content']??'').toString());
+  final image=TextEditingController(text:(old?['imageUrl']??'').toString());
   final key=GlobalKey<FormState>();
-  await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+  bool uploading=false;
+  await showDialog<void>(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,setDialog)=>AlertDialog(
    title:Text(id==null?'New short prompt':'Edit short prompt'),
    content:SizedBox(width:420,child:SingleChildScrollView(child:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[
     TextFormField(controller:title,decoration:const InputDecoration(labelText:'Title'),validator:(v)=>v==null||v.trim().isEmpty?'Enter a title':null),
     const SizedBox(height:12),
     TextFormField(controller:content,minLines:3,maxLines:7,decoration:const InputDecoration(labelText:'Short prompt'),validator:(v)=>v==null||v.trim().isEmpty?'Enter the short prompt':null),
+    const SizedBox(height:12),
+    TextFormField(controller:image,keyboardType:TextInputType.url,decoration:const InputDecoration(labelText:'Image URL (optional)')),
+    const SizedBox(height:8),
+    OutlinedButton.icon(
+     onPressed:uploading?null:() async {
+      final picked=await ImagePicker().pickImage(source:ImageSource.gallery,imageQuality:82,maxWidth:1400);
+      if(picked==null)return;
+      setDialog(()=>uploading=true);
+      try {
+       final fileRef=FirebaseStorage.instance.ref('shortPrompts/${DateTime.now().millisecondsSinceEpoch}.jpg');
+       await fileRef.putFile(File(picked.path));
+       image.text=await fileRef.getDownloadURL();
+      } catch(e) {
+       if(ctx.mounted)ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text('Image upload failed: $e')));
+      } finally { if(ctx.mounted)setDialog(()=>uploading=false); }
+     },
+     icon:uploading?const SizedBox(width:18,height:18,child:CircularProgressIndicator(strokeWidth:2)):const Icon(Icons.image_outlined),
+     label:Text(uploading?'Uploading image...':'Choose image (optional)'),
+    ),
+    if(image.text.trim().startsWith('http')) ...[
+     const SizedBox(height:8),
+     ClipRRect(borderRadius:BorderRadius.circular(10),child:Image.network(image.text.trim(),height:110,width:double.infinity,fit:BoxFit.cover,errorBuilder:(_,__,___)=>const SizedBox.shrink())),
+    ],
    ])))),
    actions:[
-    TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
-    FilledButton(onPressed:() async {
+    TextButton(onPressed:uploading?null:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+    FilledButton(onPressed:uploading?null:() async {
      if(!key.currentState!.validate()) return;
      final data=<String,Object>{'title':title.text.trim(),'content':content.text.trim(),'createdAt':old?['createdAt']??ServerValue.timestamp,'updatedAt':ServerValue.timestamp};
+     if(image.text.trim().isNotEmpty)data['imageUrl']=image.text.trim();
      try { if(id==null){await ref.push().set(data);}else{await ref.child(id).update(data);} if(ctx.mounted)Navigator.pop(ctx); }
      catch(e){if(ctx.mounted)ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Save failed: $e')));}
     },child:const Text('Save')),
    ],
-  ));
-  title.dispose();content.dispose();
+  )));
+  title.dispose();content.dispose();image.dispose();
  }
  Future<void> _delete(BuildContext context,DatabaseReference ref,String id) async {
   final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Delete short prompt?'),content:const Text('This short prompt will be removed from the User app.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));
