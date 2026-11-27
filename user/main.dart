@@ -134,7 +134,7 @@ const firebaseOptions = FirebaseOptions(
   databaseURL: 'https://romptgo-default-rtdb.firebaseio.com',
 );
 const promptCategories = <String>[
-  'All', 'New', 'Trending', 'Video Prompt', 'Kids', 'DP Maker',
+  'All', 'Short Prompts', 'New', 'Trending', 'Video Prompt', 'Kids', 'DP Maker',
   'Game', 'Cinematic', 'Anime & Cartoon',
   'Drawing and sketch', 'Photo Editing', 'Logo Design', 'Products',
 ];
@@ -442,7 +442,13 @@ class _PromptLibraryState extends State<PromptLibrary> {
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final category = promptCategories[index];
-                return ChoiceChip(label: Text(category), selected: selectedCategory == category, onSelected: (_) => setState(() => selectedCategory = category));
+                return ChoiceChip(label: Text(category), selected: selectedCategory == category, onSelected: (_) {
+                  if (category == 'Short Prompts') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ShortPromptsPage()));
+                  } else {
+                    setState(() => selectedCategory = category);
+                  }
+                });
               },
             )),
             _buildAdvertisementSection(context),
