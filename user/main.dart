@@ -11,6 +11,245 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+
+
+
+class PromptGoAds with WidgetsBindingObserver {
+  PromptGoAds._();
+  static final PromptGoAds instance = PromptGoAds._();
+
+  static const String bannerId = 'ca-app-pub-4662993198213260/1557636894';
+  static const String interstitialId = 'ca-app-pub-4662993198213260/4898116103';
+  static const String rewardedId = 'ca-app-pub-4662993198213260/8861411846';
+  static const String appOpenId = 'ca-app-pub-4662993198213260/2734987196';
+
+  InterstitialAd? _interstitial;
+  RewardedAd? _rewarded;
+  AppOpenAd? _appOpen;
+  DateTime? _appOpenLoadedAt;
+  DateTime? _lastInterstitialAt;
+  bool _initialized = false;
+  bool _showingAppOpen = false;
+  bool _wasBackgrounded = false;
+
+  Future<void> initialize() async {
+    if (_initialized || !Platform.isAndroid) return;
+    _initialized = true;
+    try {
+      await MobileAds.instance.initialize();
+      WidgetsBinding.instance.addObserver(this);
+      _loadInterstitial();
+      _loadRewarded();
+      _loadAppOpen();
+    } catch (e) {
+      debugPrint('PromptGo AdMob initialization failed: $e');
+    }
+  }
+
+  void _loadInterstitial() {
+    if (!Platform.isAndroid) return;
+    InterstitialAd.load(
+      adUnitId: interstitialId,
+      request: const AdRequest(),
+      adLoadCallback: InterstitialAdLoadCallback(
+        onAdLoaded: (ad) => _interstitial = ad,
+        onAdFailedToLoad: (error) {
+          _interstitial = null;
+          debugPrint('PromptGo interstitial failed: $error');
+        },
+      ),
+    );
+  }
+
+  void showInterstitialIfReady() {
+    final ad = _interstitial;
+    if (ad == null) {
+      _loadInterstitial();
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastInterstitialAt != null &&
+        now.difference(_lastInterstitialAt!) < const Duration(seconds: 90)) {
+      return;
+    }
+    _interstitial = null;
+    _lastInterstitialAt = now;
+    ad.fullScreenContentCallback = FullScreenContentCallback<InterstitialAd>(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _loadInterstitial();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _loadInterstitial();
+      },
+    );
+    ad.show();
+  }
+
+  void _loadRewarded() {
+    if (!Platform.isAndroid) return;
+    RewardedAd.load(
+      adUnitId: rewardedId,
+      request: const AdRequest(),
+      rewardedAdLoadCallback: RewardedAdLoadCallback(
+        onAdLoaded: (ad) => _rewarded = ad,
+        onAdFailedToLoad: (error) {
+          _rewarded = null;
+          debugPrint('PromptGo rewarded failed: $error');
+        },
+      ),
+    );
+  }
+
+  Future<bool> showRewarded({required void Function(RewardItem reward) onEarned}) async {
+    final ad = _rewarded;
+    if (ad == null) {
+      _loadRewarded();
+      return false;
+    }
+    _rewarded = null;
+    var earned = false;
+    ad.fullScreenContentCallback = FullScreenContentCallback<RewardedAd>(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _loadRewarded();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _loadRewarded();
+      },
+    );
+    ad.show(onUserEarnedReward: (_, reward) {
+      earned = true;
+      onEarned(reward);
+    });
+    return earned;
+  }
+
+  void _loadAppOpen() {
+    if (!Platform.isAndroid) return;
+    AppOpenAd.load(
+      adUnitId: appOpenId,
+      request: const AdRequest(),
+      adLoadCallback: AppOpenAdLoadCallback(
+        onAdLoaded: (ad) {
+          _appOpen = ad;
+          _appOpenLoadedAt = DateTime.now();
+        },
+        onAdFailedToLoad: (error) {
+          _appOpen = null;
+          _appOpenLoadedAt = null;
+          debugPrint('PromptGo app-open failed: $error');
+        },
+      ),
+    );
+  }
+
+  void _showAppOpenIfReady() {
+    if (!_wasBackgrounded || _showingAppOpen) return;
+    final ad = _appOpen;
+    final loadedAt = _appOpenLoadedAt;
+    if (ad == null || loadedAt == null ||
+        DateTime.now().difference(loadedAt) > const Duration(hours: 4)) {
+      _appOpen = null;
+      _appOpenLoadedAt = null;
+      _loadAppOpen();
+      return;
+    }
+    _wasBackgrounded = false;
+    _appOpen = null;
+    _appOpenLoadedAt = null;
+    _showingAppOpen = true;
+    ad.fullScreenContentCallback = FullScreenContentCallback<AppOpenAd>(
+      onAdDismissedFullScreenContent: (ad) {
+        ad.dispose();
+        _showingAppOpen = false;
+        _loadAppOpen();
+      },
+      onAdFailedToShowFullScreenContent: (ad, error) {
+        ad.dispose();
+        _showingAppOpen = false;
+        _loadAppOpen();
+      },
+    );
+    ad.show();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      _wasBackgrounded = true;
+    } else if (state == AppLifecycleState.resumed) {
+      _showAppOpenIfReady();
+    }
+  }
+}
+
+class PromptGoBannerAd extends StatefulWidget {
+  const PromptGoBannerAd({super.key});
+  @override
+  State<PromptGoBannerAd> createState() => _PromptGoBannerAdState();
+}
+
+class _PromptGoBannerAdState extends State<PromptGoBannerAd> {
+  BannerAd? _banner;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (Platform.isAndroid) {
+      final ad = BannerAd(
+        adUnitId: PromptGoAds.bannerId,
+        request: const AdRequest(),
+        size: AdSize.banner,
+        listener: BannerAdListener(
+          onAdLoaded: (ad) {
+            if (!mounted) {
+              ad.dispose();
+              return;
+            }
+            setState(() {
+              _banner = ad as BannerAd;
+              _loaded = true;
+            });
+          },
+          onAdFailedToLoad: (ad, error) {
+            ad.dispose();
+            debugPrint('PromptGo banner failed: $error');
+          },
+        ),
+      );
+      ad.load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _banner?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ad = _banner;
+    if (!_loaded || ad == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Center(
+        child: SizedBox(
+          width: ad.size.width.toDouble(),
+          height: ad.size.height.toDouble(),
+          child: AdWidget(ad: ad),
+        ),
+      ),
+    );
+  }
+}
 
 final ValueNotifier<ThemeMode> promptGoThemeMode = ValueNotifier<ThemeMode>(ThemeMode.system);
 final ValueNotifier<Color> promptGoAccent = ValueNotifier<Color>(const Color(0xff6750a4));
@@ -142,6 +381,7 @@ const promptCategories = <String>[
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: firebaseOptions);
+  unawaited(PromptGoAds.instance.initialize());
   final prefs = await SharedPreferences.getInstance();
   final savedTheme = prefs.getString('promptgo_theme') ?? 'system';
   promptGoLanguage.value = prefs.getString('promptgo_language') ?? 'English';
@@ -447,11 +687,13 @@ class _PromptLibraryState extends State<PromptLibrary> {
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const ShortPromptsPage()));
                   } else {
                     setState(() => selectedCategory = category);
+                    PromptGoAds.instance.showInterstitialIfReady();
                   }
                 });
               },
             )),
             _buildAdvertisementSection(context),
+            const PromptGoBannerAd(),
             const SizedBox(height: 10),
             visible.isEmpty
               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1012,8 +1254,8 @@ class PrivacyPolicyPage extends StatelessWidget {
       const Text('Effective date: November 4, 2026'),
       _section('1. About PromptGo', 'PromptGo is an online AI prompt library. You can browse prompt posts, save favorites on your device, receive optional new-post notifications, and view creator information. PromptGo does not require you to create an account.'),
       _section('2. Information and data', 'Favorites, selected language, theme, and accent-color preferences are stored locally on your device. When notifications are enabled, Firebase Cloud Messaging may process a device registration token so that new-post notifications can be delivered. Firebase services may also process technical connection, delivery, and diagnostic information needed to operate the database and notifications. PromptGo does not ask for your precise location, contacts, photos, or microphone access for ordinary browsing.'),
-      _section('3. How data is used', 'Data is used to display prompt content and creator details from Firebase Realtime Database, check whether an app update is required, remember your local preferences, and deliver notifications if you allow them. PromptGo does not currently use in-app advertising or third-party analytics SDKs.'),
-      _section('4. Service providers and sharing', 'PromptGo uses Google Firebase services, including Firebase Realtime Database and Firebase Cloud Messaging. These services are provided by Google and process information under Google and Firebase terms and privacy documentation. PromptGo does not sell personal information. If you tap an email, WhatsApp, website, or social-media link, your device opens that third-party service; that service then handles your information under its own privacy policy. Prompt images may be hosted on external websites and are retrieved from those hosts when displayed.'),
+      _section('3. How data is used', 'Data is used to display prompt content and creator details from Firebase Realtime Database, check whether an app update is required, remember your local preferences, deliver notifications if you allow them, and request and display Google AdMob advertisements. PromptGo displays advertisements provided by Google AdMob, including banner, interstitial, rewarded, and app-open ads. Google may process device identifiers, IP address, ad interactions, and related technical information to deliver, measure, and protect advertising.'),
+      _section('4. Service providers and sharing', 'PromptGo uses Google Firebase services, including Firebase Realtime Database and Firebase Cloud Messaging, and Google Mobile Ads (AdMob) to display advertising. Google may use information collected by its advertising services in accordance with Google's advertising and privacy policies. Advertising personalization and consent choices may depend on your region and device settings. These services are provided by Google and process information under Google and Firebase terms and privacy documentation. PromptGo does not sell personal information. If you tap an email, WhatsApp, website, or social-media link, your device opens that third-party service; that service then handles your information under its own privacy policy. Prompt images may be hosted on external websites and are retrieved from those hosts when displayed.'),
       _section('5. Retention and deletion', 'Favorites and preferences remain on your device until you clear the app data or uninstall PromptGo. Notification delivery data is handled by Firebase according to its service operation and retention rules. PromptGo does not maintain a user account in the app. For questions or requests concerning information handled by the developer, contact the email address below.'),
       _section('6. Security', 'PromptGo uses HTTPS connections for supported online services. No internet transmission or storage system can be guaranteed to be completely secure, but access to the app database and administrative tools is restricted by the project security configuration.'),
       _section('7. Children', 'PromptGo is a general-purpose prompt library and is not designed to knowingly collect personal information from children under 13. If you believe a child has provided personal information to the developer, contact us so the matter can be reviewed.'),
