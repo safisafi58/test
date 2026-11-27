@@ -1,4 +1,4 @@
-name: Build PromptGo APKs
+name: Build PromptGo APKs and AABs
 
 on:
   workflow_dispatch:
@@ -7,12 +7,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: promptgo-apk-build
+  group: promptgo-android-build
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build Admin and User APKs
+    name: Build Admin and User APKs and AABs
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -73,6 +73,7 @@ jobs:
           flutter pub get
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter build apk --release
+          flutter build appbundle --release
 
       - name: Generate User Android project
         shell: bash
@@ -113,15 +114,19 @@ jobs:
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter build apk --release
 
-      - name: Package APK files
+      - name: Package APK and AAB files
         shell: bash
         run: |
           set -e
           mkdir -p output
           cp admin_app/build/app/outputs/flutter-apk/app-release.apk output/PromptGo-Admin.apk
           cp user_app/build/app/outputs/flutter-apk/app-release.apk output/PromptGo-User.apk
+          cp admin_app/build/app/outputs/bundle/release/app-release.aab output/PromptGo-Admin.aab
+          cp user_app/build/app/outputs/bundle/release/app-release.aab output/PromptGo-User.aab
           cd output
           zip ../PromptGo-APKs.zip PromptGo-Admin.apk PromptGo-User.apk
+          zip ../PromptGo-AABs.zip PromptGo-Admin.aab PromptGo-User.aab
+          zip ../PromptGo-Android-Files.zip PromptGo-Admin.apk PromptGo-User.apk PromptGo-Admin.aab PromptGo-User.aab
 
       - name: Upload Admin APK
         uses: actions/upload-artifact@v4
@@ -144,5 +149,37 @@ jobs:
         with:
           name: PromptGo-APKs
           path: PromptGo-APKs.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Admin AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-Admin-AAB
+          path: output/PromptGo-Admin.aab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload User AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-User-AAB
+          path: output/PromptGo-User.aab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload both AABs
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-AABs
+          path: PromptGo-AABs.zip
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload APK and AAB bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: PromptGo-Android-Files
+          path: PromptGo-Android-Files.zip
           if-no-files-found: error
           retention-days: 14
