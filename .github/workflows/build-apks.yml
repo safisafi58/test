@@ -113,6 +113,7 @@ jobs:
           dart run flutter_launcher_icons
           flutter analyze --no-fatal-infos --no-fatal-warnings
           flutter build apk --release
+          flutter build appbundle --release
 
       - name: Package APK and AAB files
         shell: bash
