@@ -11,6 +11,10 @@
     "appUpdate": {
       ".read": true,
       ".write": "auth != null"
+    },
+    "shortPrompts": {
+      ".read": true,
+      ".write": "auth != null"
     }
   }
 }
