@@ -366,6 +366,7 @@ class AdminHome extends StatelessWidget {
           currentAccountPicture: const CircleAvatar(child: Icon(Icons.admin_panel_settings_rounded, size: 30)),
         ),
         ListTile(leading: const Icon(Icons.person_outline), title: const Text('Admin profile'), subtitle: Text('UID: ${FirebaseAuth.instance.currentUser?.uid ?? 'Unavailable'}')),
+        ListTile(leading: const Icon(Icons.short_text_rounded), title: const Text('Short Prompts'), subtitle: const Text('Manage short title-and-prompt cards'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminShortPromptsPage())); }),
         ListTile(leading: const Icon(Icons.campaign_outlined), title: const Text('Advertisements'), subtitle: const Text('Create, schedule, edit or remove ads'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminAdsPage())); }),
         ListTile(leading: const Icon(Icons.manage_accounts_outlined), title: const Text('App information & creator'), subtitle: const Text('Edit creator details and contacts'), onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminManagementPage())); }),
         ListTile(leading: const Icon(Icons.telegram), title: const Text('Add Telegram post'), subtitle: const Text('Import image and text from a public channel'), onTap: () { Navigator.pop(context); addTelegramPrompt(context, ref); }),
@@ -691,6 +692,54 @@ Future<void> deletePrompt(BuildContext context, DatabaseReference ref, String id
   if (confirmed == true) await ref.child(id).remove();
 }
 
+
+
+class AdminShortPromptsPage extends StatelessWidget {
+ const AdminShortPromptsPage({super.key});
+ Future<void> _edit(BuildContext context, DatabaseReference ref, {String? id, Map<dynamic,dynamic>? old}) async {
+  final title=TextEditingController(text:(old?['title']??'').toString());
+  final content=TextEditingController(text:(old?['content']??'').toString());
+  final key=GlobalKey<FormState>();
+  await showDialog<void>(context:context,builder:(ctx)=>AlertDialog(
+   title:Text(id==null?'New short prompt':'Edit short prompt'),
+   content:SizedBox(width:420,child:SingleChildScrollView(child:Form(key:key,child:Column(mainAxisSize:MainAxisSize.min,children:[
+    TextFormField(controller:title,decoration:const InputDecoration(labelText:'Title'),validator:(v)=>v==null||v.trim().isEmpty?'Enter a title':null),
+    const SizedBox(height:12),
+    TextFormField(controller:content,minLines:3,maxLines:7,decoration:const InputDecoration(labelText:'Short prompt'),validator:(v)=>v==null||v.trim().isEmpty?'Enter the short prompt':null),
+   ])))),
+   actions:[
+    TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Cancel')),
+    FilledButton(onPressed:() async {
+     if(!key.currentState!.validate()) return;
+     final data=<String,Object>{'title':title.text.trim(),'content':content.text.trim(),'createdAt':old?['createdAt']??ServerValue.timestamp,'updatedAt':ServerValue.timestamp};
+     try { if(id==null){await ref.push().set(data);}else{await ref.child(id).update(data);} if(ctx.mounted)Navigator.pop(ctx); }
+     catch(e){if(ctx.mounted)ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content:Text('Save failed: $e')));}
+    },child:const Text('Save')),
+   ],
+  ));
+  title.dispose();content.dispose();
+ }
+ Future<void> _delete(BuildContext context,DatabaseReference ref,String id) async {
+  final yes=await showDialog<bool>(context:context,builder:(ctx)=>AlertDialog(title:const Text('Delete short prompt?'),content:const Text('This short prompt will be removed from the User app.'),actions:[TextButton(onPressed:()=>Navigator.pop(ctx,false),child:const Text('Cancel')),FilledButton(onPressed:()=>Navigator.pop(ctx,true),child:const Text('Delete'))]));
+  if(yes==true)await ref.child(id).remove();
+ }
+ @override Widget build(BuildContext context){
+  final ref=FirebaseDatabase.instance.ref('shortPrompts');
+  return Scaffold(appBar:AppBar(title:const Text('Short Prompts')),floatingActionButton:FloatingActionButton.extended(onPressed:()=>_edit(context,ref),icon:const Icon(Icons.add),label:const Text('New short prompt')),
+   body:StreamBuilder<DatabaseEvent>(stream:ref.onValue,builder:(context,snap){
+    if(snap.hasError)return Center(child:Text('Database error: ${snap.error}'));
+    if(!snap.hasData)return const Center(child:CircularProgressIndicator());
+    final raw=snap.data!.snapshot.value;
+    if(raw is! Map||raw.isEmpty)return const Center(child:Text('No short prompts yet. Tap New short prompt.'));
+    final entries=raw.entries.where((e)=>e.value is Map).toList();
+    return ListView.builder(padding:const EdgeInsets.fromLTRB(14,12,14,90),itemCount:entries.length,itemBuilder:(context,i){
+     final e=entries[i];final id=e.key.toString();final d=Map<dynamic,dynamic>.from(e.value as Map);
+     return Card(child:ListTile(leading:const CircleAvatar(child:Icon(Icons.short_text_rounded)),title:Text((d['title']??'Untitled').toString(),style:const TextStyle(fontWeight:FontWeight.w800)),subtitle:Text((d['content']??'').toString(),maxLines:2,overflow:TextOverflow.ellipsis),
+      trailing:PopupMenuButton<String>(onSelected:(v){if(v=='edit')_edit(context,ref,id:id,old:d);if(v=='delete')_delete(context,ref,id);},itemBuilder:(_)=>const [PopupMenuItem(value:'edit',child:Text('Edit')),PopupMenuItem(value:'delete',child:Text('Delete'))])));
+    });
+   }));
+ }
+}
 
 class AdminManagementPage extends StatefulWidget {
   final int initialTab;
